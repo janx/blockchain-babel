@@ -58,62 +58,78 @@ POW共识同样可以理解为是一个下注机制：矿工选择一个块基�
 
 Validators bet independently on blocks at every height (i.e. block number) by assigning it a probability and publishing it as a bet. Through iterative betting, the validators elect exactly one block at every height, and this process determines the order in which transactions are executed. Notably, if a validator ever places bets with probabilities summing to more than 100% at a time for a given height, or if any are less than 0%, or if they bet with more than 0% on an invalid block, then Casper forfeits their security deposit.
 
-验证人对每一个高度上的每一个候选块独立下注，给每个块指定一个胜出概率并公布。通过反复下注，对于每个高度验证人会选出唯一一个胜出块，这个过程也决定了事务(transaction)执行的顺序。如果一个验证人在某个高度公布的概率分布总和大于100%，或者公布了小于0%的概率，或者对一个无效块指定了大于0%的概率，Casper将罚没他的保证金。
+验证人对每一个高度上的每一个候选块独立下注，给每个块指定一个胜出概率并公布。通过反复下注，对于每个高度验证人会选出唯一一个胜出块，这个过程也决定了交易(transaction)执行的顺序。如果一个验证人在某个高度公布的概率分布总和大于100%，或者公布了小于0%的概率，或者对一个无效块指定了大于0%的概率，Casper将罚没他的保证金。
 
 ## Transaction Finality
 
-## 事务定局
+## 交易最终确认(Transaction Finality)
 
 When every member of a supermajority of bonded validators (a set of validators who meet a protocol-defined threshold somewhere between 67% and 90% of bonds) bets on a block with a very high (say, > 99.9%) probability, the fork-choice rule never accepts a fork where this block does not win, and we say that the block is final. Additionally, when a client sees that every block lower than some height H is final, then the client will never choose a fork that has a different application state at height H – 1 than the one that results from the execution of transactions in these finalized blocks. In this eventuality, we say that this state is finalized.
 
-术语翻译:
-* finality
-* final
-
-当有担保的验证人中的绝大多数（满足协议定义阈值的一群验证人：保证金比例达到67%到90%之间某个百分比）以非常高的概率（例如，> 99.9%）下注某个块时，任何不包含这个块的分叉都不可能胜出，此时我们说这个块已定局(final)。此外，如果客户端发现所有小于高度H的块都已完成，那么此客户端永远不能接受一个在高度H - 1的状态和顺序执行这些完全块得到的状态不一样的分叉。这种情况下我们说这个状态(H - 1高度的状态)已完成。
+当有担保的验证人中的绝大多数（满足协议定义阈值的一群验证人：保证金比例达到67%到90%之间某个百分比）以非常高的概率（例如，> 99.9%）下注某个块时，任何不包含这个块的分叉都不可能胜出，此时我们说这个块已最终确认(final)。此外，如果客户端发现所有小于高度H的块都已最终确认，那么此客户端永远不能接受一个在高度H - 1的状态和顺序执行这些完全块得到的状态不一样的分叉。这种情况下我们说这个状态(H - 1高度的状态)已最终确认。
 
 There are therefore two relevant kinds of transaction finality: the finality of the fact that the transaction will be executed at a particular height (which is from finality of its block, and therefore priority over all future blocks at that height), and the finality of the consensus state after that transaction’s execution (which requires finality of its block and of unique blocks at all lower heights).
 
-因此这里有相关的两种事物完成：
+因此这里有相关的两种交易的最终确认：交易在特定高度被执行的最终确认（也就是对应块的最终确认，早于所有此高度之后的交易执行），以及交易执行后状态的最终确认（需要对应块和所有低于此高度的块被最终确认）。
 
 ## Censorship Resistance
 
+## 防审查（Censorship Resistance）
+
 One of the largest risks to consensus protocols is the formation of coalitions that aim to maximize the profits of their members at the expense of non-members. If Casper’s validators’ revenues are to be made up primarily of transaction fees, for example, a majority coalition could censor the remaining nodes in order to earn an increased share of transaction fees. Additionally, an attacker could bribe nodes to exclude transactions affecting particular addresses – and so long as a majority of nodes are rational, they can censor the blocks created by nodes who include these transactions.
+
+共识协议最大的威胁之一是矿工形成以损害非成员利益为代价最大化成员获利的联盟。如果Casper中验证人的收入主要由手续费构成，一个多数联盟就能够通过过滤其它节点的出块来获取更大利益。不仅如此，攻击者还可以贿赂节点来剔除特定地址发出的交易，只要多数节点是理性的，他们就能够联合起来过滤掉没有剔除指定交易的块。
 
 To resist attacks conducted by majority coalitions, Casper regards the consensus process as a cooperative game and ensures that each node is most profitable if they are in a coalition made up of 100% of the consensus nodes (at least as long as they are incentivized primarily by in-protocol rewards). If p% of the validators are participating in the consensus game, then they earn f(p) ≤ p% of the revenues they would earn if 100% of the validators were participating, for some increasing function f.
 
+为了抵御多数派联盟攻击，Casper将共识过程看作一个[合作博弈](https://en.wikipedia.org/wiki/Cooperative_game)，确保每一个节点只有在由所有节点组成的联盟中才能获得最大利益（至少在当利益主要由协议内奖励构成的情况下如此）。如果**p%**的验证人参与了共识博弈，那么他们将得到**f(p) ≤ p%**的收益；如果有100%的验证人参与则能获得更多回报。
+
 More specifically, Casper punishes validators for not creating blocks in a protocol-prescribed order. The protocol is aware of deviations from this order, and withholds transaction fees and deposits from validators accordingly. Additionally, the revenue made from betting correctly on blocks is linear (or superlinear) in the number of validators who are participating in at that height of the consensus game.
 
-Will there be more transactions per second?
+更具体的说，Casper会惩罚那些不按照协议规定顺序出块的验证人。协议会注意到出块顺序的偏离，并且扣下对应验证人的保证金和手续费。此外，通过下注赢得的收益与参与共识博弈的验证人数量成线性（或者超线性）关系。
+
+## Will there be more transactions per second?
+
+## 吞吐量（每秒可处理的交易数）会增加吗？
 
 Most probably, yes, although this is due to the economics of Casper rather than due to its blockchain architecture. However, Casper’s blockchain does allow for faster block times than is possible with proof-of-work consensus.
 
+答案很可能是确定的，而原因与其说是Casper的区块链架构不如说是Casper上的经济学。不过Casper的区块链设计确实支持了比POW共识更快的出块间隔。
+
 Validators will likely be earning only transaction fees, so they have a direct incentive to increase the gas limit, if their validation server can handle the load. However, validators also have reduced returns from causing other, slower validators to fall out of sync, so they will allow the gas limit to rise only in a manner that is tolerable by the other validators. Miners investing in hardware primarily purchase more mining rigs, while validators investing in hardware primarily upgrade their servers so they can process more transactions per second. Miners also have an incentive to reinvest in more powerful transaction processing, but this incentive is much weaker than their incentive to purchase mining power.
+
+验证人的收入很可能只有交易费用，因此他们有增加Gas上限的直接动机，只要他们的服务器负荷的了。但是如果因此造成其它处理能力比较弱的验证人跟不上节奏，他们的收入会变少。所以验证人只会接受大家都能承受的Gas上限上涨。矿工(Miners)投资硬件的方式是购买更多的矿机（算力），而验证人的投资硬件的方式则会是升级服务器以获取更高的吞吐量。矿工也有购买能获得更高吞吐量的硬件的动力，但是这比购买算力的动力弱得多。
 
 Security-deposit-based proof-of-stake is very light-client friendly relative to proof-of-work. Specifically, light clients do not need to download block headers to have full security in authenticating the consensus, or to have full economic assurances of valid transaction execution. This means that a lot of consensus overhead affects only the validators, but not the light clients, and it allows for lower latency without causing light clients to lose the ability to authenticate the consensus.
 
-Recovery from netsplits
+相对于POW, 在基于保证金的POS上实现轻客户端更加方便。具体来说，轻客户端无需下载区块头来获得共识鉴别的安全性，或是交易执行有效性的经济性保证。大部分的共识开销只会影响验证人，不会影响轻客户端。轻客户端也可以在保留鉴别共识能力的前提下实现低延迟。
+
+## Recovery from netsplits
+
+## 从网络分区中恢复
 
 Casper is able to recover from network partitions because transactions in non-finalized blocks can be reverted. After a partition reconnects, Casper executes transactions from blocks that received bets on the partition with higher validator participation. In this manner, nodes from either side of the partition agree on the state of the consensus after a reconnection and before validators are able to replace their bets. Validator bets converge to finalize the blocks in the partition that had more validator participation, with very high probability. Casper will very likely process the losing transactions from losing blocks after the ones from winning blocks, although it is still to be decided whether validators will have to include these transactions in new blocks, or if Casper will execute them in their original order, himself.
 
-Recovery from mass crash-failure
+由于未最终确认的区块中的交易可以被撤销，Casper具有在网络分区后恢复的能力。在分区重新连上后，Casper会执行具有更高验证人参与度的分区上获得下注的区块中的交易。这样在重连之后验证人重新下注前，分区双方就对共识状态达成了一致。验证人的下注会收敛并以高概率最终确认具有更高验证人参与度的分区上的某个块。Casper很可能会在产生胜出块之后再处理淘汰块中的交易，不过我们还没有决定到底是由验证人把这些交易纳入新块，还是由Casper按照原来的顺序处理。
+
+## Recovery from mass crash-failure
 
 Casper is able to recover from the crash-failure of all but one node. Bonded validators can always produce and place bets on blocks on their own, although they always make higher returns by coordinating on the production of blocks with a larger set of validators. In any case, a validator makes higher returns from producing blocks than from not producing blocks at all. Additionally, bonded validators who appear to be offline for too long will be unbonded, and new bonders subsequently will be allowed to join the validation set. Casper can thereby potentially recover precisely the security guarantees it had before the mass crash-failure.
 
-What is Casper, in non-economic terms?
+## What is Casper, in non-economic terms?
 
 Casper is an eventually-consistent blockchain-based consensus protocol. It favours availability over consistency (see the CAP theorem). It is always available, and consistent whenever possible. It is robust to unpredictable message delivery times because nodes come to consensus via re-organization of transactions, after delayed messages are eventually received. It has an eventual fault tolerance of 50%, in the sense that a fork created by >50% correct nodes scores higher than any fork created by the remaining potentially-faulty validators. Notably, though, clients cannot be certain that any given fork created with 51% participation won’t be reverted because they cannot know whether some of these nodes are Byzantine. Clients therefore only consider a block as finalized if it has the participation of a supermajority of validators (or bonded stake).
 
-What is it like to be a bonded validator?
+## What is it like to be a bonded validator?
 
 As a bonded validator, you will need to securely sign blocks and place bets on the consensus process. If you have a very large deposit, you will probably have a handful of servers in a custom multisig arrangement for validation, to minimize the chance of your server misbehaving or being hacked. This will require experimentation and technical expertise.
 
 The validator should be kept online as reliably and as much as possible, for it to maximize its profitability (or for otherwise it will be unprofitable). It will be very advisable to buy DDoS protection. Additionally, your profitability will depend on the performance and availability of the other bonded validators. This means that there is risk that you cannot directly mitigate, yourself. You could lose money even if other nodes don’t perform well – but you will lose more money yet if you don’t participate at all, after bonding. However, additional risk also often means higher average profitability – especially if the risk is perceived but the costly event never occurs.
 
-What is it like to be an application or a user?
+## What is it like to be an application or a user?
 
 Applications and their users benefit a lot from the change from proof-of-work consensus to Casper. Lower latency significantly improves the user’s experience. In normal conditions transactions finalize very quickly. In the event of network partitions, on the other hand, transactions are still executed, but the fact that they can potentially still be reverted is reported clearly to the application and end-user. The application developer therefore still needs to deal with the possibility of forking, as they do in proof-of-work, but the consensus protocol itself provides them with a clear measure of what it would take for any given transaction to be reverted.
 
-When can we hear more?
+## When can we hear more?
 
 Stay tuned! We’ll be sure to let you know more of Casper’s specification over the next months, as we come to consensus on the protocol’s details. In addition, you can look forward to seeing simulations, informal and formal specification, formal verification, and implementations of Casper! But please, be patient: R&D can take an unpredictable amount of time!  : )
