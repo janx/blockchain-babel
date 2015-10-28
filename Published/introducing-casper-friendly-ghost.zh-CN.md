@@ -8,7 +8,7 @@ Posted by Vlad Zamfir on August 1st, 2015.
 
 **Hi everyone – Vlad here. I’ve been working on the analysis and specification of  “proof-of-stake” blockchain architecture since September 2014. While Vitalik and I haven’t agreed on all of the details of the spec, we do have consensus on many properties of the proof-of-stake protocol that will likely be implemented for the Serenity release! It is called Casper “the friendly ghost” because it is an adaptation of some of the principles of the GHOST (Greedy Heaviest-Observed Sub-Tree) protocol for proof-of-work consensus to proof-of-stake. This blog post (my first one!) shares properties that are likely to be true of Casper’s implementation in the Serenity release. Formal verification and simulation of Casper’s properties is under way, and will be published eventually – in the meantime, please enjoy this high-level, informal discussion!  : )**
 
-**大家好，我是Vlad. 2014年9月份我开始了研究和设计以太坊POS(proof-of-stake, 权益证明)架构的工作。目前Vitalik和我对于Serenity阶段的POS协议应该长什么样已经有了许多共识，只剩一些细节方面的分歧。我们称它为友善的幽灵Casper(Casper the friendly ghost)，因为它实际上是GHOST(Greedy Heaviest-Observed Sub-Tree), 一种POW协议的POS变种。接下来的文章介绍的一些特性非常可能在Serenity阶段成为现实。Casper的形式化验证和模拟正在进行中，结果会在将来发布。接下来先开始我们的非正式介绍和讨论吧！: )**
+**大家好，我是Vlad. 2014年9月份我开始了研究和设计以太坊POS(proof-of-stake, 权益证明)架构的工作。目前Vitalik和我对于Serenity阶段的POS协议应该长什么样已经有了许多共识，只剩一些细节方面的分歧。我们称它为友善的小精灵Casper(Casper the friendly ghost)，因为它实际上是GHOST(Greedy Heaviest-Observed Sub-Tree), 一种POW协议的POS变种。接下来的文章介绍的一些特性非常可能在Serenity阶段成为现实。Casper的形式化验证和模拟正在进行中，结果会在将来发布。接下来先开始我们的非正式介绍和讨论吧！: )**
 
 ## Security-deposit based security and authentication
 
