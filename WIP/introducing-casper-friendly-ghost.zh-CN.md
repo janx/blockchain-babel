@@ -106,7 +106,7 @@ Security-deposit-based proof-of-stake is very light-client friendly relative to 
 
 ## Recovery from netsplits
 
-## 从网络分区中恢复
+## 网络分区的恢复
 
 Casper is able to recover from network partitions because transactions in non-finalized blocks can be reverted. After a partition reconnects, Casper executes transactions from blocks that received bets on the partition with higher validator participation. In this manner, nodes from either side of the partition agree on the state of the consensus after a reconnection and before validators are able to replace their bets. Validator bets converge to finalize the blocks in the partition that had more validator participation, with very high probability. Casper will very likely process the losing transactions from losing blocks after the ones from winning blocks, although it is still to be decided whether validators will have to include these transactions in new blocks, or if Casper will execute them in their original order, himself.
 
@@ -114,22 +114,44 @@ Casper is able to recover from network partitions because transactions in non-fi
 
 ## Recovery from mass crash-failure
 
+## 大规模崩溃的恢复
+
 Casper is able to recover from the crash-failure of all but one node. Bonded validators can always produce and place bets on blocks on their own, although they always make higher returns by coordinating on the production of blocks with a larger set of validators. In any case, a validator makes higher returns from producing blocks than from not producing blocks at all. Additionally, bonded validators who appear to be offline for too long will be unbonded, and new bonders subsequently will be allowed to join the validation set. Casper can thereby potentially recover precisely the security guarantees it had before the mass crash-failure.
+
+即使在全网只剩一个节点没有崩溃的极端情况下Casper也有能力恢复。有担保的验证人总是独立的对候选块下注，虽然下注和多数验证人一致的话回报会更高。在任何时候，验证人从出块获得的回报总是比不出块要高。如果有担保的验证人过长时间没有上线，他的资格会被撤销，候选的验证人会接替他的位置。因此Casper的安全程度可以恢复到和大规模崩溃之前一样。
 
 ## What is Casper, in non-economic terms?
 
+## 抛开经济学术语的解释
+
 Casper is an eventually-consistent blockchain-based consensus protocol. It favours availability over consistency (see the CAP theorem). It is always available, and consistent whenever possible. It is robust to unpredictable message delivery times because nodes come to consensus via re-organization of transactions, after delayed messages are eventually received. It has an eventual fault tolerance of 50%, in the sense that a fork created by >50% correct nodes scores higher than any fork created by the remaining potentially-faulty validators. Notably, though, clients cannot be certain that any given fork created with 51% participation won’t be reverted because they cannot know whether some of these nodes are Byzantine. Clients therefore only consider a block as finalized if it has the participation of a supermajority of validators (or bonded stake).
+
+Casper是一个基于区块链的最终一致性共识协议。想对于一致性(C)它更倾向于可用性(A)（[见CAP理论](https://en.wikipedia.org/wiki/CAP_theorem)）。它总是可用，并且尽可能迅速的达成一致。它健壮到足以容忍不可预计的消息传输延迟，因为节点可以在收到延迟的消息之后通过重新组织交易达成共识。由大于50%的正常节点建立的分叉总是比剩下的有潜在问题的节点建立的分叉权重更高，因此它可以容忍不超过50%的网络失效。TODO: Notably, though, clients cannot be certain that any given fork created with 51% participation won’t be reverted because they cannot know whether some of these nodes are Byzantine. Clients therefore only consider a block as finalized if it has the participation of a supermajority of validators (or bonded stake).
 
 ## What is it like to be a bonded validator?
 
+## 验证人有什么责任？
+
 As a bonded validator, you will need to securely sign blocks and place bets on the consensus process. If you have a very large deposit, you will probably have a handful of servers in a custom multisig arrangement for validation, to minimize the chance of your server misbehaving or being hacked. This will require experimentation and technical expertise.
+
+作为一个有担保的验证人，你需要对块进行签名以及在共识过程中下注。如果你缴纳了一大笔保证金，你也许应该部署一个由多台服务器组成的多重签名环境来做验证工作，以减少服务器异常或是被黑导致的风险。这种方案需要反复实验和技术专家的帮助。
 
 The validator should be kept online as reliably and as much as possible, for it to maximize its profitability (or for otherwise it will be unprofitable). It will be very advisable to buy DDoS protection. Additionally, your profitability will depend on the performance and availability of the other bonded validators. This means that there is risk that you cannot directly mitigate, yourself. You could lose money even if other nodes don’t perform well – but you will lose more money yet if you don’t participate at all, after bonding. However, additional risk also often means higher average profitability – especially if the risk is perceived but the costly event never occurs.
 
+为了最大化收益，验证人需要尽可能的保持在线和服务稳定。DDoS防护服务是非常必要的。你的收益率还取决于其他验证人的处理性能和可用性，也就是说这里存在一个你无法直接化解的风险。如果其他节点表现不行你也会遭受损失！但是此时如果你决定完全不参与共识你会损失更多。然而额外的风险通常意味着更高的回报，尤其是当风险已经被认识到而永远不会发生的时候。
+
 ## What is it like to be an application or a user?
+
+## 应用和普通用户有什么好处？
 
 Applications and their users benefit a lot from the change from proof-of-work consensus to Casper. Lower latency significantly improves the user’s experience. In normal conditions transactions finalize very quickly. In the event of network partitions, on the other hand, transactions are still executed, but the fact that they can potentially still be reverted is reported clearly to the application and end-user. The application developer therefore still needs to deal with the possibility of forking, as they do in proof-of-work, but the consensus protocol itself provides them with a clear measure of what it would take for any given transaction to be reverted.
 
+应用和它们的用户可以从POW转向Casper的变化中获得许多好处。低延迟确认可以极大的改善用户体验。一般情况下交易很快就能最终确认。如果有网络分区发生，交易依然会被执行，而交易有被撤销的可能性这一情况会被清楚的报告给应用和其用户。应用的开发者依然需要处理分叉的情况，和使用POW协议时一样，但此时共识协议会为他们提供交易在什么情况下才会被撤销的清楚估量。TODO: but the consensus protocol itself provides them with a clear measure of what it would take for any given transaction to be reverted.
+
 ## When can we hear more?
 
+## 什么时候有更多消息？
+
 Stay tuned! We’ll be sure to let you know more of Casper’s specification over the next months, as we come to consensus on the protocol’s details. In addition, you can look forward to seeing simulations, informal and formal specification, formal verification, and implementations of Casper! But please, be patient: R&D can take an unpredictable amount of time!  : )
+
+请保持关注！随着协议细节的确定，接下来的几个月我们肯定会发布关于Casper的更多信息。大家可以期待下模拟测试，非正式的和形式化的标准，形式化的验证，以及Casper的实现！谢谢大家的耐心，研发需要的时间总是难以预测！: )
