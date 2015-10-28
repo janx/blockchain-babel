@@ -1,6 +1,6 @@
 # Introducing Casper “the Friendly Ghost”
 
-# 友好的小精灵Casper - 以太坊未来的POS协议
+# 友善的小精灵Casper - 以太坊未来的POS协议
 
 [Origin Post](https://blog.ethereum.org/2015/08/01/introducing-casper-friendly-ghost/)
 
