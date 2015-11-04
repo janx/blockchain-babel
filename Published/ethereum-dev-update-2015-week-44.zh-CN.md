@@ -1,7 +1,7 @@
 # Ethereum Dev Update 2015 / Week 44
 # 以太坊开发更新 2015年第44周
 
-Posted by Taylor Gerring on November 2nd, 2015.
+[Original Posted](https://blog.ethereum.org/2015/11/02/ethereum-dev-update-2015-week-44/) by Taylor Gerring on November 2nd, 2015.
 
 With DEVCON1 a mere week away, the teams are excited and preparing to share all the great tools and technology the ecosystem has to offer. There will be hundreds of developers and dozens of talks including Nick Szabo, Vitalik Buterin, and Marley Gray from Microsoft. Tickets are limited and we anticipate selling out, so if you haven’t already registered, head on over to https://devcon.ethereum.org to secure your spot now!
 
