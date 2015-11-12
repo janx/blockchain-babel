@@ -13,7 +13,7 @@ _有人说以太坊既重逻辑又难用，因此我们(译注：指[Consensys](
 
 * [第一部分](#第一部分. 概述)概述，讨论了关键概念，几大以太坊客户端以及写智能合约用到的编程语言。
 * [第二部分](#第二部分. DApp框架，工具以及工作流程)讨论了总体的工作流程，以及目前流行的一些DApp框架和工具。
-* 第三部分主要关于编程，我们将学习如何使用Truffle来为智能合约编写测试和构建DApp。
+* [第三部分](#第三部分. 编程)主要关于编程，我们将学习如何使用Truffle来为智能合约编写测试和构建DApp。
 
 ## Part I. Intro
 ## 第一部分. 概述
@@ -196,3 +196,31 @@ Sample Contracts and DApps. Search Github for DApp repos and .sol files to see w
 
 ### Workflow for Deploying Smart Contracts
 ### 部署智能合约的流程
+
+The workflow is:
+
+流程如下：
+
+1. Start an Ethereum node (e.g. geth or testrpc)
+2. Compile your Solidity smart contract using solc => get back the binary
+3. Deploy your compiled contract to the network. (This step costs ether and signs the contract using your node’s default wallet address, or you can specify another address.) => get back the contract’s blockchain address and ABI (a JSON-ified representation of your compiled contract’s variables, events and methods that you can call)
+4. Call stuff in the contract using web3.js’s JavaScript API to interact with it (This step may cost ether depending on the type of invocation.)
+This workflow is depicted in greater detail in the diagram below:
+
+1. 启动一个**以太坊节点** (例如geth或者testrpc)。
+2. 使用solc**编译**智能合约。 => 获得二进制代码。
+3. 将编译好的合约**部署**到网络。（这一步会消耗以太币，还需要使用你的节点的默认地址或者指定地址来给合约签名。） => 获得合约的区块链地址和ABI（合约接口的JSON表示，包括变量，事件和可以调用的方法）。(译注：作者在这里把ABI与合约接口弄混了。ABI是合约接口的二进制表示。)
+4. 用web3.js提供的JavaScript API来**调用**合约。（根据调用的类型有可能会消耗以太币。）
+
+This workflow is depicted in greater detail in the diagram below:
+
+下图详细描绘了这个流程：
+
+![dapp-front-end-steps.png](101-noob-intro/dapp-front-end-steps.png)
+
+You could build a DApp that provides a UI for users to deploy a contract then use it (Steps 1 or 4). Or your DApp could assume the contract’s already been deployed (common) and start the UI flow from there (Step 6).
+
+你的DApp可以给用户提供一个界面先部署所需合约再使用之（如图1到4步），也可以假设合约已经部署了（常见方法），直接从使用合约（如图第6步）的界面开始。
+
+## Part III. The Programming Part, Finally
+## 第三部分. 编程
