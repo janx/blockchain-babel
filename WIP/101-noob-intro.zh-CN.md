@@ -224,3 +224,211 @@ You could build a DApp that provides a UI for users to deploy a contract then us
 
 ## Part III. The Programming Part, Finally
 ## 第三部分. 编程
+
+## Testing in Truffle
+## 在Truffle中进行测试
+
+Truffle is great for test-driven development of smart contracts which is highly recommended to maintain sanity when you’re starting to learn how things work. It’s also useful as a way to learn to write promises in JavaScript, i.e., deferred and asynchronous callbacks. Promises are like “do this, then when that comes back, do that, and when that comes back, do this other thing…and don’t keep us waiting while all that’s going on, ok?” Truffle uses a JS promises framework called Pudding on top of web3.js (so it installs web3.js for you too).
+
+[Truffle](https://github.com/consensys/truffle)用来做智能合约的测试驱动开发(TDD)非常棒，我强烈推荐你在学习中使用它。它也是学习使用JavaScript Promise的一个好途径，例如deferred和异步调用。Promise机制有点像是说“做这件事，如果结果是这样，做甲，如果结果是那样，做乙... 与此同时不要在那儿干等着结果返回，行不？”。Truffle使用了包装web3.js的一个JS Promise框架[Pudding](https://github.com/ConsenSys/ether-pudding)（因此它为为你安装web3.js）。(译注：Promise是流行于JavaScript社区中的一种异步调用模式。它很好的封装了异步调用，使其能够灵活组合，而不会陷入callback hell.)
+
+Transaction times. Promises are extremely useful for DApps because transactions need to be mined into the blockchain (takes 12-15 seconds in Ethereum). Even if they don’t seem to take that long on a test network it may take longer on the live network, or to find out it didn’t happen (e.g. your transaction could have ran out of gas, or was mined into a block that’s been orphaned).
+
+**Transaction times.** Promise对于DApp非常有用，因为交易写入以太坊区块链需要大约12-15秒的时间。即使在测试网络上看起来没有那么慢，在正式网络上却可能会要更长的时间（例如你的交易可能用光了Gas，或者被写入了一个孤儿块）。
+
+So let’s copy a simple smart contract and write a test for it.
+
+下面让我们给一个简单的智能合约写测试用例吧。
+
+## Using Truffle
+## 使用Truffle
+
+Make sure you have 1. solc installed and 2. testrpc. (For testrpc you’ll need Python and pip. If you’re new to Python, to install it you may also need to use a virtualenv, a way to keep python libraries separate on a single computer.)
+
+首先确保你 1.安装好了[solc](https://github.com/ethereum/webthree-umbrella/wiki)以及 2.[testrpc](https://github.com/ConsenSys/eth-testrpc)。（testrpc需要[Python](https://www.python.org/downloads/)和[pip](https://pip.pypa.io/en/stable/installing/)。如果你是Python新手，你可能需要用[virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/)来安装，这可以将Python程序库安装在一个独立的环境中。）
+
+Install 3. Truffle (You can do this using NodeJS’s npm: npm install -g truffle, the -g may require sudo). To verify it installed, type truffle list in a console window to list all truffle commands. Then create a new project directory (I’m naming my new directory ‘conference’), change into it, and do truffle init. This will create this directory structure:
+
+接下来安装 3.[Truffle](https://github.com/ConsenSys/truffle)（你可以使用[NodeJS's npm](https://docs.npmjs.com/getting-started/installing-node)来安装：`npm install -g truffle`, `-g`开关可能会需要sudo）。安装好之后，在命令行中输入`truffle list`来验证安装成功。然后创建一个新的项目目录（我把它命名为'conference'），进入这个目录，运行`truffle init`。该命令会建立如下的目录结构：
+
+![truffle-directories.png](101-noob-intro/truffle-directories.png)
+
+Now start a client node in a new console window by running testrpc (or start your geth node):
+
+现在让我们在**另一个终端**里通过执行`testrpc`来启动一个节点（你也可以用geth）：
+
+![testrpc-start.png](101-noob-intro/testrpc-start.png)
+
+Back in the first truffle console window, now type truffle deploy. This will deploy the Example contract truffle init created as boilerplate. Any errors messages you may have will show up in either the testrpc console window or the truffle window.
+
+回到之前的终端中，输入`truffle deploy`。这条命令会部署之前`truffle init`产生的模板合约到网络上。任何你可能遇到的错误信息都会在testrpc的终端或者执行truffle的终端中输出。
+
+As you’re developing you can do truffle compile to make sure your contracts compile (using solc you can also run solc YourContract.sol), truffle deploy to compile and deploy it to the network, and truffle test to run your smart contract tests.
+
+在开发过程中你随时可以使用`truffle compile`命令来确认你的合约可以正常编译（或者使用`solc YourContract.sol`），`truffle deploy`来编译和部署合约，最后是`truffle test`来运行智能合约的测试用例。
+
+## First Contract, First Test
+## 第一个合约
+
+Here’s a Solidity contract for a Conference where registrants can buy tickets, and the organizer can set a maximum quota of attendees as well as provide refunds. All the code presented in this tutorial is in this repo.
+
+下面是一个针对会议的智能合约，通过它参会者可以买票，组织者可以设置参会人数上限，以及退款策略。本文涉及的所有代码都可以在这个[代码仓库](https://github.com/eshon/conference)找到。
+
+```
+contract Conference {
+  address public organizer;
+  mapping (address => uint) registrantsPaid;
+  uint public numRegistrants;
+  uint public quota;
+
+  event Deposit(address _from, uint _amount);  // so you can log these events
+  event Refund(address _to, uint _amount); 
+
+  function Conference() { // Constructor
+    organizer = msg.sender;
+    quota = 500;
+    numRegistrants = 0;
+  }
+  function buyTicket() public returns (bool success) {
+    if (numRegistrants >= quota) { return false; }
+    registrantsPaid[msg.sender] = msg.value;
+    numRegistrants++;
+    Deposit(msg.sender, msg.value);
+    return true;
+  }
+  function changeQuota(uint newquota) public {
+    if (msg.sender != organizer) { return; }
+    quota = newquota;
+  }
+  function refundTicket(address recipient, uint amount) public {
+    if (msg.sender != organizer) { return; }
+    if (registrantsPaid[recipient] == amount) { 
+      address myAddress = this;
+      if (myAddress.balance >= amount) { 
+        recipient.send(amount);
+        registrantsPaid[recipient] = 0;
+        numRegistrants--;
+        Refund(recipient, amount);
+      }
+    }
+  }
+  function destroy() { // so funds not locked in contract forever
+    if (msg.sender == organizer) { 
+      suicide(organizer); // send funds to organizer
+    }
+  }
+}
+```
+
+接下来让我们部署这个合约。（注意：本文写作时我使用的是Mac OS X 10.10.5, solc 0.1.3+ (通过brew安装)，Truffle v0.2.3, testrpc v0.1.18 (使用venv)）
+
+## Deploying the Contract
+## 部署合约
+
+![truffle-steps.png](101-noob-intro/truffle-steps.png)
+
+(译注：图中步骤翻译如下：）
+
+使用truffle部署智能合约的步骤：
+1. `truffle init` (在新目录中) => 创建truffle项目目录结构
+2. 编写合约代码，保存到`contracts/YourContractName.sol`文件。
+3. 把合约名字加到`config/app.json`的'contracts'部分。
+4. 启动以太坊节点（例如在另一个终端里面运行`testrpc`）。
+5. `truffle deploy`（在truffle项目目录中)
+
+**添加一个智能合约。** 在`truffle init`执行后或是一个现有的项目目录中，复制粘帖上面的会议合约到`contracts/Conference.sol`文件中。然后打开`config/app.json`文件，把'Conference'加入'deploy'数组中。
+
+![truffle-config-deploy.png](101-noob-intro/truffle-config-deploy.png)
+
+Start testrpc. Start testrpc in a separate console window using testrpc if its not already running.
+
+**启动testrpc。** 在另一个终端中启动`testrpc`。
+
+Compile or Deploy. Run truffle compile to see if the contract compiles, or just do truffle deploy to compile and deploy at once. This will add the deployed contract’s address and ABI(that JSON-ified version of the compiled contract) to the config directory, which truffle test and truffle build will pull in from later on.
+
+**编译或部署。** 执行`truffle compile`看一下合约是否能成功编译，或者直接`truffle deploy`一步完成编译和部署。这条命令会把部署好的合约的地址和ABI（应用接口）加入到配置文件中，这样之后的`truffle test`和`truffle build`步骤可以使用这些信息。
+
+Errors? Did that compile? Again, error messages may show up in either the testrpc console or the truffle console.
+
+**出错了？** 编译是否成功了？记住，错误信息即可能出现在testrpc终端也可能出现在truffle终端。
+
+Redeploy after restarting a node! If you stop your testrpc node, remember to redeploy any contracts using truffle deploy before trying to use them again. Each time testrpc restarts it’s a blank slate. 
+
+**重启节点后记得重新部署！** 如果你停止了testrpc节点，下一次使用任何合约之前切记使用`truffle deploy`重新部署。testrpc在每一次重启之后都会回到完全空白的状态。
+
+## Analyzing the Contract
+## 合约代码解读
+
+Let’s start with the variables at the top of the smart contract:
+
+让我们从智能合约头部的变量声明开始：
+
+```
+address public organizer;
+mapping (address => uint) public registrantsPaid;
+uint public numRegistrants;
+uint public quota;
+```
+
+address. The first variable is the wallet address of the organizer. This is set when the constructor is called in function Conference(). A lot of contracts will also call this the ‘owner’.
+
+**address.** 地址类型。第一个变量是会议组织者的钱包地址。这个地址会在合约的构造函数`function Conference()`中被赋值。很多时候也称呼这种地址为'owner'（所有人）。
+
+uint. An unsigned integer. Space is important on the blockchain so keep things as small as possible.
+
+**uint.** 无符号整型。区块链上的存储空间很紧张，保持数据尽可能的小。
+
+public. Means it can be called from outside the contract. A private modifier would mean it can only be called from within the contract (or by derived contracts). If you’re trying to call a variable from a web3.js call in a test make sure its public.
+
+**public.** 这个关键字表明变量可以被合约之外的对象使用。`private`修饰符则表示变量只能被本合约(或者衍生合约)内的对象使用。如果你想要在测试中通过web3.js使用合约中的某个变量，记得把它声明为`public`。
+
+Mappings or Arrays. Before Solidity added support for arrays, mappings like mapping (address => uint) were used. This could also be written as address registrantsPaid[] but mappings have a smaller footprint. This mapping will be used to store how much each registrant (represented by their wallet address) has paid so they can get refunds later on.
+
+**Mapping或数组。**（译注：Mapping类似Hash, Directory等数据类型，不做翻译。）在Solidity加入数组类型之前，大家都使用类似`mapping (address => uint)`的Mapping类型。这个声明也可以写作`address registrantsPaid[]`，不过Mapping的存储占用更小(smaller footprint)。这个Mapping变量会用来保存参加者（用他们的钱包地址表示）的付款数量以便在退款时使用。
+
+More on addresses. Your client node (i.e., testrpc or geth in these examples) can have one or more accounts. In testrpc, on startup an array of 10 “Available Addresses” are displayed:
+
+**关于地址。** 你的客户端（比如testrpc或者geth）可以生成一个或多个账户/地址。testrpc启动时会显示10个可用地址：
+
+![testrpc-accounts.png](101-noob-intro/testrpc-accounts.png)
+
+第一个地址, `accounts[0]`，是发起调用的默认地址，如果没有特别指定的话。
+
+Organizer address vs. Contract address. Your deployed contract will have its own contract address (different from the organizer’s address) on the blockchain. This address is accessible in a Solidity contract using this, as used inside the refundTicket function in the contract: address myAddress = this;
+
+**组织者地址 vs. 合约地址。** 部署好的合约会在区块链上拥有自己的地址（与组织者拥有的是不同的地址）。在Solidity合约中可以使用`this`来访问这个合约地址，正如`refundTicket`函数所展示的：`address myAddress = this;`
+
+Suicide, a good thing in Solidity. Funds sent to the contract are held in the contract itself. In the destroy function above funds are finally released to the organizer set in the constructor. suicide(organizer); does this. Without it, funds can end up locked in the contract forever (somebody on reddit lost some ether this way), so make sure to include that method if your contract collects funds!
+
+**Suicide, Solidity的好东西。**（译注：`suicide`意为'自杀', 为Solidity提供的关键字，不做翻译。）转给合约的资金会保存于合约（地址）中。最终这些资金通过`destroy`函数被释放给了构造函数中设置的组织者地址。这是通过`suicide(orgnizer);`这行代码实现的。没有这个，资金可能被永远锁定在合约之中（reddit上有些人就遇到过），因此如果你的合约会接受资金一定要记得在合约中使用这个方法！
+
+If you want to simulate another user or counterparty (e.g. simulate a buyer if you’re a seller), you can use another address from the accounts array. To buy a ticket as a different user, say accounts[1], use it in the from field:
+
+如果想要模拟另一个用户或者对手方（例如你是卖家想要模拟一个买家），你可以使用可用地址数组中另外的地址。假设你要以另一个用户，`accounts[1]`, 的身份来买票，可以通过`from`参数设置：
+
+```
+conference.buyTicket({ from: accounts[1], value: some_ticket_price_integer });
+```
+
+Some Function Calls can be Transactions. Function calls that change the state of the contract (modify values, add records, etc.) are transactions and have implicit sender and value. So inside curly braces ``{ from: __, value: __ }`` can be specified in a web3.js function call to send funds to a transaction function from a wallet address. On the Solidity end, you can retrieve these values using msg.sender and msg.value, which are implicity in Solidty transaction functions:
+
+**函数调用可以是交易。** 改变合约状态（修改变量值，添加记录，等等）的函数调用本身也是转账交易，隐式的包含了发送人和交易价值。因此web3.js的函数调用可以通过指定`{ from: __, value: __ }`参数来发送以太币。在Solidity合约中，你可以通过`msg.sender`和`msg.value`来获取这些信息：
+
+```
+function buyTicket() public {
+	...
+	registrantsPaid[msg.sender] = msg.value;
+	...
+}
+```
+
+Events. These are totally optional. Deposit and Send in the contract are events that can be logged in the Ethereum Virtual Machine logs. They don’t actually do anything, but are good practice for keeping track that a transaction has happened.
+
+**事件(Event)。** 可选的功能。合约中的`Deposit`（充值）和`Send`（发送）事件是会被记录在以太坊虚拟机日志中的数据。它们实际上没有任何作用，但是用事件(Event)把交易记录进日志是好的做法。
+
+Okay, let’s write a test for this smart contract to make sure it works. 
+
+好了，现在让我们给这个智能合约写一个测试，来确保它能工作。
+
+## Writing a Test
+## 写测试
