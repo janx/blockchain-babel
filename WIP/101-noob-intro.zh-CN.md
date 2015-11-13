@@ -523,3 +523,94 @@ Run truffle test again to make sure that works for you. )
 
 ### Writing a Test calling a Contract Function
 ### 测试合约函数调用
+
+Let’s test that the function that changes the quota works. Inside the contract('Conference', function(accounts) {...}; body of tests/conference.js stick this additional test:)
+
+现在我们测试一下改变`quote`变量的函数能工作。在`tests/conference.js`文件的`contract('Conference', function(accounts) {...};)`的函数体中添加如下测试用例：
+
+```
+it("Should update quota", function(done) {
+  var c = Conference.at(Conference.deployed_address);
+
+  Conference.new({from: accounts[0] }).then(
+    function(conference) {
+      conference.quota.call().then( 
+        function(quota) { 
+          assert.equal(quota, 500, "Quota doesn't match!"); 
+        }).then( function() { 
+          return conference.changeQuota(300);
+        }).then( function(result) {  // result here is a transaction hash
+          console.log(result);  // if you were to print this out it’d be long hex - the transaction hash
+          return conference.quota.call()
+        }).then( function(quota) { 
+          assert.equal(quota, 300, "New quota is not correct!");
+          done();
+        }).catch(done);
+    }).catch(done);
+});
+```
+
+The new thing is the line that calls the changeQuota function. The console.log is also useful for debugging to print the result in the truffle console’s output. Add a console.log to see if the execution gets to a certain point. Also make sure the changeQuota function in the Solidity contract is public, or you won’t be able to call it:
+
+这里的新东西是调用`changeQuota`函数的那一行。`console.log`对于调试很有用，用它能在运行truffle的终端中输出信息。在关键点插入`console.log`可以查看执行到了哪一步。记得把Solidity合约中`changeQuota`函数被声明为`public`，否则你不能调用它：
+
+```
+  function changeQuota(uint newquota) public {  }
+```
+
+### Writing a Test for a Transaction
+### 测试交易
+
+Let’s call a function that expects funds from a wallet address.
+
+现在让我们调用一个需要发起人发送资金的函数。
+
+Wei. Ether has a lot of denominations (here’s a helpful converter) and the one normally used in contracts is Wei, the smallest. Web3.js provides convenience methods for converting ether to/from Wei, as in web3.toWei(.05, 'ether'). JavaScript has issues with very big numbers so web3.js uses a BigNumber library and they recommend keeping things in Wei in your code until users see it (docs).
+
+**Wei.** 以太币有很多种单位（这里有个很有用的[转换器](http://ether.fund/tool/converter)）,在合约中通常用的是Wei，最小的单位。Web3.js提供了在各单位与Wei之间互相转换的便利方法，形如`web3.toWei(.05, 'ether')`。JavaScript在处理很大的数字时有问题，因此web3.js使用了[程序库BigNumber](https://github.com/MikeMcl/bignumber.js/)，并建议在代码各处都以Wei做单位，直到要给用户看的时候（[文档](https://github.com/ethereum/wiki/wiki/JavaScript-API#a-note-on-big-numbers-in-web3js)。
+
+Account Balances. Web3.js provides a lot more convenience methods here, and another one used in the test below is web3.eth.getBalance(some_address). Remember that funds sent to the contract are in the contract itself until suicide is called.
+
+**账户余额。** Web3.js提供了许多提供方便的[方法](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3-javascript-%C3%90app-api-reference)，其中另一个会在下面测试用到的是`web3.eth.getBalance(some_address)`。记住发送给合约的资金会由合约自己持有直到调用`suicide`。
+
+Inside the contract(Conference, function(accounts) {...}; body stick this additional test. In the highlighted method below, the test has a second user (accounts[1]) buy a ticket for ticketPrice. Then it checks that the contract’s balance has increased by the ticketPrice sent and that the second user has been added to the list of registrants.
+
+在`contract(Conference, function(accounts) {...};)`的函数体中插入下面的测试用例。在高亮显示的方法中，测试用例让另一个用户(`accounts[1]`)以`ticketPrice`的价格买了一张门票。然后它检查合约的账户余额增加了`ticketPrice`，以及购票用户被加入了参会者列表。
+
+In this test buyTicket is a Transaction:)
+
+这个测试中的`buyTicket`调用是一个交易：
+
+```
+it("Should let you buy a ticket", function(done) {
+  var c = Conference.at(Conference.deployed_address);
+
+  Conference.new({ from: accounts[0] }).then(
+    function(conference) {
+      var ticketPrice = web3.toWei(.05, 'ether');
+      var initialBalance = web3.eth.getBalance(conference.address).toNumber();
+
+      conference.buyTicket({ from: accounts[1], value: ticketPrice }).then(
+        function() {
+          var newBalance = web3.eth.getBalance(conference.address).toNumber();
+          var difference = newBalance - initialBalance;
+          assert.equal(difference, ticketPrice, "Difference should be what was sent");
+          return conference.numRegistrants.call();
+      }).then(function(num) {
+          assert.equal(num, 1, "there should be 1 registrant");
+          return conference.registrantsPaid.call(accounts[1]);
+      }).then(function(amount) {
+          assert.equal(amount.toNumber(), ticketPrice, "Sender's paid but is not listed");
+          done();
+      }).catch(done);
+  }).catch(done);
+});
+```
+
+Transactions are Signed. Unlike previous function calls this is a transaction sent funds, so under the hood the second user (accounts[1]) is signing the transaction call buyTicket() with their key. (In geth the user would have to enter a password to approve this transaction or unlock their account before sending funds.)
+
+**交易需要签名。** 和之前的函数调用不同，这个调用是一个会发送资金的交易，在这种情况下购票用户(`accounts[1]`)会用他的私钥对`buyTicket()`调用做签名。（在geth中用户需要在发送资金之前通过输入密码来批准这个交易或是解锁钱包的账户。）
+
+toNumber(). Sometimes results from Solidity returned have to be converted from hex. If it might be a really big number go with web3.toBigNumber(numberOrHexString) because Javascript can mess up big numbers. 
+
+**toNumber().** 有时我们需要把Solidity返回的十六进制结果转码。如果结果可能是个很大的数字可以用`web3.toBigNumber(numberOrHexString)`来处理因为JavaScript直接对付大数要糟。
