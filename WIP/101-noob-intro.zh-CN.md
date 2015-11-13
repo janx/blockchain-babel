@@ -225,8 +225,8 @@ You could build a DApp that provides a UI for users to deploy a contract then us
 ## Part III. The Programming Part, Finally
 ## 第三部分. 编程
 
-## Testing in Truffle
-## 在Truffle中进行测试
+### Testing in Truffle
+### 在Truffle中进行测试
 
 Truffle is great for test-driven development of smart contracts which is highly recommended to maintain sanity when you’re starting to learn how things work. It’s also useful as a way to learn to write promises in JavaScript, i.e., deferred and asynchronous callbacks. Promises are like “do this, then when that comes back, do that, and when that comes back, do this other thing…and don’t keep us waiting while all that’s going on, ok?” Truffle uses a JS promises framework called Pudding on top of web3.js (so it installs web3.js for you too).
 
@@ -240,8 +240,8 @@ So let’s copy a simple smart contract and write a test for it.
 
 下面让我们给一个简单的智能合约写测试用例吧。
 
-## Using Truffle
-## 使用Truffle
+### Using Truffle
+### 使用Truffle
 
 Make sure you have 1. solc installed and 2. testrpc. (For testrpc you’ll need Python and pip. If you’re new to Python, to install it you may also need to use a virtualenv, a way to keep python libraries separate on a single computer.)
 
@@ -267,8 +267,8 @@ As you’re developing you can do truffle compile to make sure your contracts co
 
 在开发过程中你随时可以使用`truffle compile`命令来确认你的合约可以正常编译（或者使用`solc YourContract.sol`），`truffle deploy`来编译和部署合约，最后是`truffle test`来运行智能合约的测试用例。
 
-## First Contract, First Test
-## 第一个合约
+### First Contract, First Test
+### 第一个合约
 
 Here’s a Solidity contract for a Conference where registrants can buy tickets, and the organizer can set a maximum quota of attendees as well as provide refunds. All the code presented in this tutorial is in this repo.
 
@@ -322,8 +322,8 @@ contract Conference {
 
 接下来让我们部署这个合约。（注意：本文写作时我使用的是Mac OS X 10.10.5, solc 0.1.3+ (通过brew安装)，Truffle v0.2.3, testrpc v0.1.18 (使用venv)）
 
-## Deploying the Contract
-## 部署合约
+### Deploying the Contract
+### 部署合约
 
 ![truffle-steps.png](101-noob-intro/truffle-steps.png)
 
@@ -356,8 +356,8 @@ Redeploy after restarting a node! If you stop your testrpc node, remember to red
 
 **重启节点后记得重新部署！** 如果你停止了testrpc节点，下一次使用任何合约之前切记使用`truffle deploy`重新部署。testrpc在每一次重启之后都会回到完全空白的状态。
 
-## Analyzing the Contract
-## 合约代码解读
+### Analyzing the Contract
+### 合约代码解读
 
 Let’s start with the variables at the top of the smart contract:
 
@@ -430,5 +430,96 @@ Okay, let’s write a test for this smart contract to make sure it works.
 
 好了，现在让我们给这个智能合约写一个测试，来确保它能工作。
 
-## Writing a Test
-## 写测试
+### Writing a Test
+### 写测试
+
+In your project folder’s test/ directory rename the example.js test file to conference.js. Modify all instances of “Example” to “Conference”.
+
+把项目目录`test/`中的`example.js`文件重命名为`conference.js`，文件中所有的'Example'替换为'Conference'。
+
+```
+contract('Conference', function(accounts) {
+  it("should assert true", function(done) {
+    var conference = Conference.at(Conference.deployed_address);
+    assert.isTrue(true);
+    done();   // stops tests at this point
+  });
+});
+```
+
+On running truffle test from the project’s root directory you should see the test pass. In the test above truffle gets the contract’s address on the blockchain from Conference.deployed_address.
+
+在项目根目录下运行`truffle test`，你应该看到测试通过。在上面的测试中truffle通过`Conference.deployed_address`获得合约部署在区块链上的地址。
+
+Let’s write a test to initialize a new Conference and check that the initial variables are being set correctly. Replace the test in conference.js with this one:
+
+让我们写一个测试来初始化一个新的Conference，然后检查变量都正确赋值了。将`conference.js`中的测试代码替换为：
+
+```
+contract('Conference', function(accounts) {
+  it("Initial conference settings should match", function(done) {
+    var conference = Conference.at(Conference.deployed_address);  
+    // same as previous example up to here
+    Conference.new({ from: accounts[0]  })
+    .then(function(conference) {
+      conference.quota.call().then(
+          function(quota) {
+            assert.equal(quota, 500, "Quota doesn't match!"); 
+          }).then( function() {
+            return conference.numRegistrants.call();
+          }).then( function(num) {
+            assert.equal(num, 0, "Registrants should be zero!");
+            return conference.organizer.call();
+          }).then( function(organizer) {
+            assert.equal(organizer, accounts[0], "Owner doesn't match!");
+            done();   // to stop these tests earlier, move this up
+        }).catch(done);
+      }).catch(done);
+    });
+  });
+```
+
+Constructor. Conference.new({ from: accounts[0] }) instantiates a new Conference by calling the contract’s constructor. Since accounts[0] is used by default if no from is specified, so it could have been left out when calling the constructor:
+
+**构造函数。** `Conference.new({ from: accounts[0] })`通过调用合约构造函数创造了一个新的Conference实例。由于不指定`from`时会默认使用`accounts[0]`，它其实可以被省略掉：
+
+```
+Conference.new({ from: accounts[0] }); // 和Conference.new()效果相同
+```
+
+Promises. That’s what those then and return’s above are. What’s going on above might start to look like a deeply nested function call chain like:
+
+**Promise.** 代码中的那些`then`和`return`就是Promise。它们的作用写成一个深深的嵌套调用链的话会是这样：
+
+```
+conference.numRegistrants.call().then(
+  function(num) {
+    assert.equal(num, 0, "Registrants should be zero!");
+    conference.organizer.call().then(
+     function(organizer) {
+        assert.equal(organizer, accounts[0], "Owner doesn't match!");
+        }).then(
+          function(...))
+            }).then(
+              function(...))
+            // Because this would get hairy...
+```
+
+Promises flatten this to minimize nesting, allow for calls to return asynchronously and help simplify the syntax of writing “on success do this” vs. “on failure do that”. Web3.js provides callbacks for asynchronous requests (docs) so you don’t have to wait for transactions to complete to do stuff in the front-end. (Truffle uses a promises framework wrapper to web3.js called Pudding, based on the framework Bluebird, which also has advanced promise features.)
+
+Promise减少嵌套，使代码变得扁平，允许调用异步返回，并且简化了表达“成功时做这个”和“失败时做那个”的语法。Web3.js通过[回调函数](https://github.com/ethereum/wiki/wiki/JavaScript-API#using-callbacks)实现异步调用，因此你不需要等到交易完成就可以继续执行前端代码。Truffle借助了用Promise封装web3.js的一个框架，叫做[Pudding](https://github.com/ConsenSys/ether-pudding)，这个框架本身又是基于[Bluebird](http://ricostacruz.com/cheatsheets/bluebird.html)的，它支持Promise的高级特性。
+
+call. Use this to check the values of variables as in conference.quota.call().then(... or with an argument like call(0) to call a mapping and get index 0. Solidity docs say this is a “message call” which is 1. not mined and so 2. doesn’t have to be from an account/wallet (therefore it’s not signed with an account holder’s private keys). Transactions on the other hand, are mined, have to be from an account (i.e., signed), and are recorded on the blockchain. Modifying any value in a contract is a transaction. Just checking a variable value is not. So don’t forget to add call() when calling variables! Crazy things can happen. [Also, if you’re trying to call a variable and having problems make sure its public.] call() can also be used to call functions that are not transactions. If they are meant to be transactions and you try to call() them, they won’t execute as transactions on the blockchain.
+
+**call.** 我们使用`call`来检查变量的值，例如`conference.quota.call().then(...`，还可以通过传参数，例如`call(0)`, 来获取mapping在index 0处的元素。Solidity的文档说这是一种特殊的“消息调用”因为 1.不会为矿工记录和 2.不需要从钱包账户/地址发起（因此它没有被账户持有者私钥做签名）。另一方面，交易/事务(Transaction)会被矿工记录，必须来自于一个账户（也就是有签名），会被记录到区块链上。对合约中数据做的任何修改都是交易。仅仅是检查一个变量的值则不是。因此在读取变量时不要忘记加上`call()`！否则会发生奇怪的事情。（此外如果在读取变量是遇到问题别忘记检查它是否是`public`。）`call()`也能用于调用不是交易的函数。如果一个函数本来是交易，但你却用`call()`来调用，则不会在区块链上产生交易。
+
+assert. Standard JS testing assertion (if you type ‘asserts’ plural by accident truffle will have errors and you won’t know what’s going on), see the Chai docs for other types of assertions but assert.equal is usually all you need.
+
+**断言。** 标准JS测试中的断言（如果你不小心拼成了复数形式'asserts'，truffle会报错，让你一头雾水），`assert.equal`是最常用的，其他类型的断言可以在[Chai的文档](http://chaijs.com/api/assert/)中找到。
+
+Run truffle test again to make sure that works for you. )
+
+再一次运行`truffle test`确保一切工作正常。
+
+### Writing a Test calling a Contract Function
+### 测试合约函数调用
