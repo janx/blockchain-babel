@@ -579,7 +579,7 @@ Inside the contract(Conference, function(accounts) {...}; body stick this additi
 
 In this test buyTicket is a Transaction:)
 
-这个测试中的`buyTicket`调用是一个交易：
+这个测试中的`buyTicket`是一个交易函数：
 
 ```
 it("Should let you buy a ticket", function(done) {
@@ -614,3 +614,114 @@ Transactions are Signed. Unlike previous function calls this is a transaction se
 toNumber(). Sometimes results from Solidity returned have to be converted from hex. If it might be a really big number go with web3.toBigNumber(numberOrHexString) because Javascript can mess up big numbers. 
 
 **toNumber().** 有时我们需要把Solidity返回的十六进制结果转码。如果结果可能是个很大的数字可以用`web3.toBigNumber(numberOrHexString)`来处理因为JavaScript直接对付大数要糟。
+
+### Writing a Test for a Contract Sending a Transaction
+### 测试包含转账的合约
+
+Finally, for sanity, let’s make sure the refundTicket method works and can only be activated by the organizer. Here’s a test for it:
+
+最后，为了完整性，我们确认一下`refundTicket`方法能正常工作，而且只有会议组织者能调用。下面是测试用例：
+
+```
+it("Should issue a refund by owner only", function(done) {
+  var c = Conference.at(Conference.deployed_address);
+
+  Conference.new({ from: accounts[0] }).then(
+    function(conference) {
+      var ticketPrice = web3.toWei(.05, 'ether');
+      var initialBalance = web3.eth.getBalance(conference.address).toNumber(); 
+
+      conference.buyTicket({ from: accounts[1], value: ticketPrice }).then(
+        function() {
+          var newBalance = web3.eth.getBalance(conference.address).toNumber();
+          var difference = newBalance - initialBalance;
+          assert.equal(difference, ticketPrice, "Difference should be what was sent");  // same as before up to here
+          // Now try to issue refund as second user - should fail
+          return conference.refundTicket(accounts[1], ticketPrice, {from: accounts[1]});  
+        }).then(
+          function() {
+            var balance = web3.eth.getBalance(conference.address).toNumber();
+            assert.equal(web3.toBigNumber(balance), ticketPrice, "Balance should be unchanged");
+            // Now try to issue refund as organizer/owner - should work
+            return conference.refundTicket(accounts[1], ticketPrice, {from: accounts[0]});  
+        }).then(
+          function() {
+            var postRefundBalance = web3.eth.getBalance(conference.address).toNumber();
+            assert.equal(postRefundBalance, initialBalance, "Balance should be initial balance");
+            done();
+        }).catch(done);
+    }).catch(done);
+ });
+```
+
+这个测试用例覆盖的Solidity函数如下：
+
+```
+function refundTicket(address recipient, uint amount) public returns (bool success) {
+  if (msg.sender != organizer) { return false; }
+  if (registrantsPaid[recipient] == amount) { 
+    address myAddress = this;
+    if (myAddress.balance >= amount) { 
+      recipient.send(amount);
+      Refund(recipient, amount);
+      registrantsPaid[recipient] = 0;
+      numRegistrants--;
+      return true;
+    }
+  }
+  return false;
+}
+```
+
+Sending ether from a contract. address myAddress = this shows how to get the conference instance’s address, so you can check the balance in the subsequent line (or just use this.balance). Also the recipient.send(amount) method is where the contract sends funds back to recipient.
+
+**合约中发送以太币。** `address myAddress = this`展示了如何获取该会议合约实例的地址，以变接下来检查这个地址的余额（或者直接使用`this.balance`）。合约通过`recipient.send(amount)`方法把资金发回了购票人。
+
+Transactions cannot return results to web3.js. Note this! The refundTicket function returns a bool but this cannot be checked in your test. This method is a transaction (i.e., something that modifies values or send ether), and the result of a transaction to web3.js is a transaction hash (if you printed the result it’ll be a long hex/weird-looking object). So why add a return value to the refundTicket call at all? The return value can be read in Solidity, such as by another contract that calls refundTicket(). So Solidity contracts can read return values from a transaction, but web3.js transaction calls cannot. On the other hand, other contracts can’t use Events (discussed below) which is how you can monitor transactions in web3.js, or check whether a transaction has modified instance variables in a subsequent test promise using call().
+
+**交易无法返回结果给web3.js.** 注意这一点！`refundTicket`函数会返回一个布尔值，但是这在测试中无法检查。因为这个方法是一个交易函数（会改变合约内数据或是发送以太币的调用），而web3.js得到的交易运行结果是一个交易哈希（如果打印出来是一个长长的十六进制/怪怪的字符串）。既然如此为什么还要让`refundTicket`返回一个值？因为在Solidity合约内可以读到这个返回值，例如当另一个合约调用`refundTicket()`的时候。也就是说Solidity合约可以读取交易运行的返回值，而web3.js不行。另一方面，在web3.js中你可以用事件机制（Event, 下文会解释）来监控交易运行，而合约不行。合约也无法通过`call()`来检查交易是否修改了合约内变量的值。
+
+More on sendTransaction(). When you call a transaction like buyTicket() or refundTicket() using web3.js (which uses web3.eth.sendTransaction), the transaction does not execute right away. Instead the transaction is submitted to the network of miners, and the code does not run until one of those miners scores a block and the transaction is mined into the blockchain. So to verify a transaction you have to wait for it to make it onto the blockchain and then back to your local node. With testrpc this may be seem instantaneous because it’s so fast but on a live network it will be slower.
+
+**关于sendTransaction().** 当你通过web3.js调用类似`buyTicket()`或者`refundTicket()`的交易函数时（使用`web3.eth.sendTransaction`），交易并不会立即执行。事实上交易会被提交到矿工网络中，交易代码直到其中一位矿工产生一个新区块把交易记录进区块链之后才执行。因此你必须等交易进入区块链并且同步回本地节点之后才能验证交易执行的结果。用testrpc的时候可能看上去是实时的，因为测试环境很快，但是正式网络会比较慢。
+
+Events. Instead of using return values you can listen for events in web3.js. The smart contract example has these events:
+
+**事件/Event.** 在web3.js中你应该监听[事件](https://github.com/ethereum/wiki/wiki/JavaScript-API#contract-events)而不是返回值。我们的智能合约示例定义了这些事件：
+
+```
+event Deposit(address _from, uint _amount);
+event Refund(address _to, uint _amount);
+```
+
+And they are triggered in buyTicket() and refundTicket(). You can see these logged in the output of testrpc when called. To listen for them, you can also add web3.js listeners. At time of writing I haven’t been able to log events inside of truffle tests but have logged them in an app:
+
+它们在`buyTicket()`和`refundTicket()`中被触发。触发时你可以在testrpc的输出中看到日志。要监听事件，你可以使用web.js监听器(listener)。在写本文时我还不能在truffle测试中记录事件，但是在应用中没问题：
+
+```
+Conference.new({ from: accounts[0] }).then(
+  function(conference) {
+    var event = conference.allEvents().watch({}, ''); // or use conference.Deposit() or .Refund()
+    event.watch(function (error, result) {
+      if (error) {
+        console.log("Error: " + error);
+      } else {
+        console.log("Event: " + result.event);
+      }
+    });
+    // ...
+```
+
+Filters. Instead of checking all events above which may lead to a lot of polling, filters could be used instead. They allow you to start and stop watching for them when your transactions are done. More on filters can be found in the Solidity docs.
+
+**过滤器/Filter.** 监听所有事件可能会产生大量的轮询，作为替代可以使用过滤器。它们可以更灵活的开始或是停止对事件的监听。更多过滤器的信息可查看[Solidity文档](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethfilter)。
+
+Overall, using events and filters are cheaper in terms of gas than checking variables so might be useful if you need to verify transactions on the live network.
+
+总的来说，使用事件和过滤器的组合比检查变量消耗的Gas更少，因而在验证正式网络的交易运行结果时非常有用。
+
+Gas. Up to this point we haven’t needed to discuss gas at all, it usually doesn’t need to be explicitly set with testrpc. As you move to geth and then the live network it will. In your transaction calls you can send gas implicitly inside the {from: __, value: __, gas: __} objects. Web3.js has a call for checking the gas price web3.eth.gasPrice and the Solidity compiler also has a flag you can call from the command line to get a summary of gas expenditures for your contract: solc --gas YourContract.sol. Here’s the output for Conference.sol:
+
+**Gas.** （译注：以太坊上的燃料，因为代码的执行必须消耗Gas。直译为汽油比较突兀，故保留原文做专有名词。）直到现在我们都没有涉及Gas的概念，因为在使用testrpc时通常不需要显式的设置。当你转向geth和正式网络时会需要。在交易函数调用中可以在`{from: __, value: __, gas: __}`对象内设置Gas参数。Web3.js提供了[`web3.eth.gasPrice`](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgasprice)调用来获取当前Gas的价格，Solidity编译器也提供了一个参数让你可以从命令行获取合约的Gas开销概要：`solc --gas YouContract.sol`。下面是`Conference.sol`的结果：
+
+![solc-gas.png](101-noob-intro/solc-gas.png)
