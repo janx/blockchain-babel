@@ -1,4 +1,5 @@
 # A 101 Noob Intro to Programming Smart Contracts on Ethereum
+# 以太坊智能合约编程之菜鸟教程
 
 [Original Post](http://consensys.github.io/developers/articles/101-noob-intro/) by Eva, With help from Consensys devs
 
@@ -277,7 +278,7 @@ Here’s a Solidity contract for a Conference where registrants can buy tickets,
 ```
 contract Conference {
   address public organizer;
-  mapping (address => uint) registrantsPaid;
+  mapping (address => uint) public registrantsPaid;
   uint public numRegistrants;
   uint public quota;
 
@@ -437,7 +438,7 @@ In your project folder’s test/ directory rename the example.js test file to co
 
 把项目目录`test/`中的`example.js`文件重命名为`conference.js`，文件中所有的'Example'替换为'Conference'。
 
-```
+```javascript
 contract('Conference', function(accounts) {
   it("should assert true", function(done) {
     var conference = Conference.at(Conference.deployed_address);
@@ -455,7 +456,7 @@ Let’s write a test to initialize a new Conference and check that the initial v
 
 让我们写一个测试来初始化一个新的Conference，然后检查变量都正确赋值了。将`conference.js`中的测试代码替换为：
 
-```
+```javascript
 contract('Conference', function(accounts) {
   it("Initial conference settings should match", function(done) {
     var conference = Conference.at(Conference.deployed_address);  
@@ -491,7 +492,7 @@ Promises. That’s what those then and return’s above are. What’s going on a
 
 **Promise.** 代码中的那些`then`和`return`就是Promise。它们的作用写成一个深深的嵌套调用链的话会是这样：
 
-```
+```javascript
 conference.numRegistrants.call().then(
   function(num) {
     assert.equal(num, 0, "Registrants should be zero!");
@@ -528,7 +529,7 @@ Let’s test that the function that changes the quota works. Inside the contract
 
 现在我们测试一下改变`quote`变量的函数能工作。在`tests/conference.js`文件的`contract('Conference', function(accounts) {...};)`的函数体中添加如下测试用例：
 
-```
+```javascript
 it("Should update quota", function(done) {
   var c = Conference.at(Conference.deployed_address);
 
@@ -581,7 +582,7 @@ In this test buyTicket is a Transaction:)
 
 这个测试中的`buyTicket`是一个交易函数：
 
-```
+```javascript
 it("Should let you buy a ticket", function(done) {
   var c = Conference.at(Conference.deployed_address);
 
@@ -622,7 +623,7 @@ Finally, for sanity, let’s make sure the refundTicket method works and can onl
 
 最后，为了完整性，我们确认一下`refundTicket`方法能正常工作，而且只有会议组织者能调用。下面是测试用例：
 
-```
+```javascript
 it("Should issue a refund by owner only", function(done) {
   var c = Conference.at(Conference.deployed_address);
 
@@ -698,7 +699,7 @@ And they are triggered in buyTicket() and refundTicket(). You can see these logg
 
 它们在`buyTicket()`和`refundTicket()`中被触发。触发时你可以在testrpc的输出中看到日志。要监听事件，你可以使用web.js监听器(listener)。在写本文时我还不能在truffle测试中记录事件，但是在应用中没问题：
 
-```
+```javascript
 Conference.new({ from: accounts[0] }).then(
   function(conference) {
     var event = conference.allEvents().watch({}, ''); // or use conference.Deposit() or .Refund()
@@ -725,3 +726,141 @@ Gas. Up to this point we haven’t needed to discuss gas at all, it usually does
 **Gas.** （译注：以太坊上的燃料，因为代码的执行必须消耗Gas。直译为汽油比较突兀，故保留原文做专有名词。）直到现在我们都没有涉及Gas的概念，因为在使用testrpc时通常不需要显式的设置。当你转向geth和正式网络时会需要。在交易函数调用中可以在`{from: __, value: __, gas: __}`对象内设置Gas参数。Web3.js提供了[`web3.eth.gasPrice`](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgasprice)调用来获取当前Gas的价格，Solidity编译器也提供了一个参数让你可以从命令行获取合约的Gas开销概要：`solc --gas YouContract.sol`。下面是`Conference.sol`的结果：
 
 ![solc-gas.png](101-noob-intro/solc-gas.png)
+
+### Creating a DApp UI for your contract
+### 为合约创建DApp界面
+
+*This next section assumes you might be new to some web development practices, just in case.*
+
+*下面的段落会假设你没有网页开发经验。*
+
+All the truffle tests written above are using JavaScript methods re-usable in a front-end UI. Add your UI to the truffle directory app/. On running truffle build it will be compiled along with contract configuration stuff to the build/ directory. When developing use truffle watch to constantly compile any changes in app/* to build/*. Then reload what’s in the build/ directory in your browser. (truffle serve can also run a webserver for you from build/.)
+
+上面编写的测试用例用到的都是在前端界面中也可以用的方法。你可以把前端代码放到`app/`目录中，运行`truffle build`之后它们会和合约配置信息一起编译输出到`build/`目录。在开发时可以使用`truffle watch`命令在`app/`有任何变动时自动编译输出到`build/`目录。然后在浏览器中刷新页面即可看到`build/`目录中的最新内容。（`truffle serve`可以启动一个基于`build/`目录的网页服务器。）
+
+In the app/ directory there’ll be some boilerplate started for you:
+
+`app/`目录中有一些样板文件帮助你开始：
+
+![truffle-app-directory.png](101-noob-intro/truffle-app-directory.png)
+
+**index.html** already loads app.js:
+
+`index.html`会加载`app.js`：
+
+![truffle-index.png](101-noob-intro/truffle-index.png)
+
+So we can just add some code to app.js.
+
+因此我们只需要添加代码到`app.js`就可以了。
+
+app.js has a console.log with “Hello from Truffle!” that will show up in your browser’s developer console. Start truffle watch in the project root directory and then open build/index.html in a browser window, and open the browser’s developer console (In a lot of browsers like Chrome, right-click » Inspect Element and switch to the Console tab below.)
+
+默认的`app.js`会在浏览器的console(控制台)中输出一条"Hello from Truffle!"的日志。在项目根目录中运行`truffle watch`，然后在浏览器中打开`build/index.html`文件，再打开浏览器的console就可以看到。（大部分浏览器例如Chrome中，单击右键 -> 选择Inspect Element然后切换到Console即可。）
+
+![truffle-console.png](101-noob-intro/truffle-console.png)
+
+In app.js, add a window.onload function that’ll be called when the page loads. This snippet below will confirm web3.js is loaded and show all the accounts available. [Note: your testrpc node should still be running.]
+
+在`app.js`中，添加一个在页面加载时会运行的`window.onload`调用。下面的代码会确认web3.js已经正常载入并显示所有可用的账户。（注意：你的testrpc节点应该保持运行。）
+
+```javascript
+window.onload = function() {
+  var accounts = web3.eth.accounts;
+  console.log(accounts);
+}
+```
+
+See if that prints an array of accounts to your browser console.
+
+看看你的浏览器console中看看是否打印出了一组账户地址。
+
+Now you can just copy some functions from tests/conference.js (remove the assertions since those are for testing), and output what’s returneds to the console to confirm its working. Here’s an example:
+
+现在你可以从`tests/conference.js`中复制一些代码过来（去掉只和测试有关的断言），将调用返回的结果输出到console中以确认代码能工作。下面是个例子：
+
+```javascript
+window.onload = function() {
+  var accounts = web3.eth.accounts;
+  var c = Conference.at(Conference.deployed_address);
+
+  Conference.new({ from: accounts[0] }).then(
+    function(conference) {
+
+    var ticketPrice = web3.toWei(.05, 'ether');
+    var initialBalance = web3.eth.getBalance(conference.address).toNumber(); 
+    console.log("The conference's initial balance is: " + initialBalance);
+
+    conference.buyTicket({ from: accounts[1], value: ticketPrice }).then(
+      function() {
+        var newBalance = web3.eth.getBalance(conference.address).toNumber();
+        console.log("After someone bought a ticket it's: " + newBalance);
+        return conference.refundTicket(accounts[1], ticketPrice, {from: accounts[0]});
+      }).then(
+        function() {  
+          var balance = web3.eth.getBalance(conference.address).toNumber();
+          console.log("After a refund it's: " + balance);
+      });
+  });
+};
+```
+
+The code above should output:
+
+上面的代码应该输出如下：
+
+![truffle-output.png](101-noob-intro/truffle-output.png)
+
+(Ignore any Synchronous warning, it’s a known issue.)
+
+(console输出的warning信息可忽略。)
+
+Now using whatever web tools you prefer, jQuery, ReactJS, Meteor, Ember, AngularJS, etc., you can start building a DApp UI in app/for interacting with an Ethereum smart contract! Below is a super simple jQuery-based UI as an example.
+
+现在起你就可以使用你喜欢的任何前端工具，jQuery, ReactJS, Meteor, Ember, AngularJS，等等等等，在`app/`目录中构建可以与以太坊智能合约互动的DApp界面了！接下来我们给出一个极其简单基于jQuery的界面作为示例。
+
+![jquery-dapp-ui.png](101-noob-intro/jquery-dapp-ui.png)
+
+这里是[index.html的代码](https://github.com/eshon/conference/blob/master/app/index.html)，这里是[app.js的代码](https://github.com/eshon/conference/blob/master/app/javascripts/app.js)。
+
+Now that I’m interacting with the smart contract in a UI I’m realizing it’d be good to add checks to make sure the same user can’t register twice. Also since this is running on testrpc, which is really fast, it’d be good to switch to geth and make sure the transactions are still responsive to the user. Otherwise the UI should have some loading messages and disabled buttons while the transactions are being processed if they’re going to take a while.
+
+通过界面测试了智能合约之后我意识到最好加入检查以保证相同的用户不能注册两次。另外由于现在是运行在testrpc节点上，速度很快，最好是切换到geth节点并确认交易过程依然能及时响应。否则的话界面上就应该显示提示信息并且在处理交易时禁用相关的按钮。
+
+Trying geth. If you’re using geth, this line was working for me (geth v1.2.3):
+
+**尝试geth.** 如果你使用[geth](https://github.com/ethereum/go-ethereum/), 可以尝试以下面的命令启动 - 在我这儿(geth v1.2.3)工作的很好：
+
+```
+build/bin/geth --rpc --rpcaddr="0.0.0.0" --rpccorsdomain="*" --mine --unlock='0 1' --verbosity=5 --maxpeers=0 --minerthreads='4'  --networkid '12345' --genesis test-genesis.json
+```
+
+This unlocks two accounts, 0 and 1. 1. You may need to enter the passwords to both accounts after the geth console starts up. 2. You will also need a test-genesis.json file with both of your accounts well-funded under ‘alloc’ in the test-genesis.json.) 3. Finally, for geth add gas when calling the constructor:
+
+这条命令解锁了两个账户, `0`和`1`。1. 在geth控制台启动后你可能需要输入这两个账户的密码。2. 你需要在[`test-genesis.json`](https://github.com/ethereum/go-ethereum/wiki/Connecting-to-the-network#custom-networks)文件里面的'alloc'配置中加入你的这两个账户，并且给它们充足的资金。3. 最后，在创建合约实例时加上gas参数：
+
+```
+Conference.new({from: accounts[0], gas: 3141592})
+```
+
+Then re-do the whole truffle deploy, truffle build thing.
+
+然后把整个`truffle deploy`, `truffle build`流程重来一遍。
+
+Code for this tutorial. All the code presented in this basic tutorial is in this repo.
+
+**教程中的代码。** 在这篇基础教程中用到的所有代码都可以在这个[代码仓库](https://github.com/eshon/conference)中找到。
+
+Auto-generating UIs from contracts. SilentCicero has also built a tool called DApp Builder to auto-generate from a Solidity contract HTML, jQuery and web3.js calls you can modify. This is also starting to be a common theme of some other smart contract dev tools coming out.
+
+**自动为合约生成界面。** [SilentCicero](https://github.com/SilentCicero)制作了一个叫做[DApp Builder](http://dapp-builder.meteor.com/)的工具，可以用Solidity合约自动生成HTML, jQuery和web.js的代码。这种模式也正在被越来越多的正在开发中的开发者工具采用。
+
+Ok tutorial over! This last part was a walkthrough of just one set of tools, mainly Truffle and testrpc. Even within ConsenSys, different developers use different tools and frameworks. You might find tools out there that are a better fit for you, and some things may change in a few months. But this workflow has helped me get started learning to build DApps.
+
+**教程到此结束！** 最后一章我们仅仅学习了一套工具集，主要是Truffle和testrpc. 要知道即使在ConsenSys内部，不同的开发者使用的工具和框架也不尽相同。你可能会发现更适合你的工具，这里所说的工具可能很快也会有改进。但是本文介绍的工作流程帮助我走上了DApp开发之路。
+
+(⊙ω⊙) wonk wonk
+
+Thanks to Joseph Chow for a lot of proofreading and suggestions, as well as Christian Lundkvist, Daniel Novy, Jim Berry, Peter Borah and Tim Coulter for corrections and debugging help, and Tim Coulter, Nchinda Nchinda and Mike Goldin for helping with the DApp Front-end Steps diagram.
+
+*感谢Joseph Chow的校阅和建议，Christian Lundkvist, Daniel Novy, Jim Berry, Peter Borah和Tim Coulter帮我修改文字和debug，以及Tim Coulter, Nchinda Nchinda和Mike Goldin对DApp前端步骤图提供的帮助。*
