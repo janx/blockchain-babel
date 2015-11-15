@@ -5,16 +5,15 @@
 
 _Some people say Ethereum is too logic-heavy and hard to use, but here’s a write-up to give you a feel for building smart contracts and applications with it. Tools, wallets, applications and the ecosystem are still in development and it’ll get easier!_
 
-?? logic-heavy
-_有人说以太坊既重逻辑又难用，因此我们(译注：指[Consensys](http://consensys.net), 下同)写了这篇文章来帮助大家学习如何利用以太坊编写智能合约和应用。这里所用到的工具，钱包，应用程序以及整个生态系统仍处于开发状态，它们将来会更加好用！_
+有些人说以太坊太难对付，于是我们(译注：指[Consensys](http://consensys.net), 下同)写了这篇文章来帮助大家学习如何利用以太坊编写智能合约和应用。这里所用到的工具，钱包，应用程序以及整个生态系统仍处于开发状态，它们将来会更好用！
 
 * Part I is an overview of key terms and discusses Ethereum Clients and Smart Contract Languages.
 * Part II discusses overall workflow and some current DApp Frameworks and Tools and
 * Part III is a the Programming Part, a quick walkthrough of writing tests and building a DApp for a smart contract using Truffle.
 
-* [第一部分](#第一部分. 概述)概述，讨论了关键概念，几大以太坊客户端以及写智能合约用到的编程语言。
-* [第二部分](#第二部分. DApp框架，工具以及工作流程)讨论了总体的工作流程，以及目前流行的一些DApp框架和工具。
-* [第三部分](#第三部分. 编程)主要关于编程，我们将学习如何使用Truffle来为智能合约编写测试和构建DApp。
+* [第一部分](#第一部分-概述)概述，讨论了关键概念，几大以太坊客户端以及写智能合约用到的编程语言。
+* [第二部分](#第二部分-DApp框架工具以及工作流程)讨论了总体的工作流程，以及目前流行的一些DApp框架和工具。
+* [第三部分](#第三部分-编程)主要关于编程，我们将学习如何使用Truffle来为智能合约编写测试和构建DApp。
 
 ## Part I. Intro
 ## 第一部分. 概述
