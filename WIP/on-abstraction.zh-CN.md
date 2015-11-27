@@ -135,6 +135,7 @@ def _create(vals:arr, depth):
         ~setval(vals[0])
 ```
 
+
 Clearly, the trie, the treap and in fact any other tree-like data structure could thus be implemented as a library on top of these methods. What is particularly interesting is that each individual opcode is constant-time: theoretically, each node can keep track of the pointers to its children and parent on the database level, requiring only one level of overhead.
 
 显然，无论是trie, 堆还是其它任何类似树的数据结构，都可以实现为基于这些指令的库。这里最有意思的是每一条指令都是常数时间复杂度的：理论上，每个节点都可以记下指向其子节点和父节点的数据库层的指针，只需增加一层开销。
@@ -145,3 +146,113 @@ However, this approach also comes with flaws. Particularly, note that if we lose
 
 # Currency
 # 货币
+
+It’s well-known and established that an open blockchain requires some kind of cryptocurrency in order to incentivize people to participate in the consensus process; this is the kernel of truth behind this otherwise rather silly meme:
+
+一个公开的区块链需要密码学货币来激励用户参与共识过程，这已经是一个被广泛接受的观点了，正如这张搞笑图片所表达的：
+
+![bitcoin-is-not-useful.jpg](on-abstraction/btc-not-useful.jpg)
+
+However, can we create a blockchain that does not rely on any specific currency, instead allowing people to transact using whatever currency they wish? In a proof of work context, particularly a fees-only one, this is actually relatively easy to do for a simple currency blockchain; just have a block size limit and leave it to miners and transaction senders themselves to come to some equilibrium over the transaction price (the transaction fees may well be done as a batch payment via credit card). For Ethereum, however, it is slightly more complicated. The reason is that Ethereum 1.0, as it stands, comes with a built-in gas mechanism which allows miners to safely accept transactions without fear of being hit by denial-of-service attacks; the mechanism works as follows:
+
+问题是，我们是否可以创造一个不依赖任何**特定货币**的区块链，让人们可以用任何他们想用的货币进行交易呢？在工作量证明，尤其是只有交易费奖励的条件下，这对于一个简单货币??? 对于以太坊来说则有些复杂。原因是目前的以太坊1.0版本引入了一个燃料机制(gas)，来帮助矿工可以安全的接受交易而无须担心拒绝服务攻击的风险。这个机制是这样工作的：
+
+1. Every transaction specifies a max gas count and a fee to pay per unit gas.
+2. Suppose that the transaction allows itself a gas limit of N. If the transaction is valid, and takes less than N computational steps (say, M computational steps), then it pays M steps worth of the fee. If the transaction consumes all N computational steps before finishing, the execution is reverted but it still pays N steps worth of the fee.
+
+1. 每一个交易都指定好gas消耗上限，以及每单位gas的价格。
+2. 假设这个交易的gas上限是N. 如果交易是有效的，而且只用了不到N的计算量（设用掉的计算量为M），那么它要支付计算量M对应的手续费。如果交易在处理结束之前用光了N单位的计算量，执行被回滚，而且依然要支付计算量N对应的手续费。
+
+This mechanism relies on the existence of a specific currency, ETH, which is controlled by the protocol. Can we replicate it without relying on any one particular currency? As it turns out, the answer is yes, at least if we combine it with the “use any cryptography you want” scheme above. The approach is as follows. First, we extend the above cryptography-neutrality scheme a bit further: rather than having a separate concept of “verification code” to decide whether or not a particular transaction is valid, simply state that there is only one type of account – a contract, and a transaction is simply a message coming in from the zero address. If the transaction exits with an exceptional condition within 50000 gas, the transaction is invalid; otherwise it is valid and accepted. Within this model, we then set up accounts to have the following code:
+
+这个机制依赖于受协议控制的特定货币ETH（以太币）的存在。我们是否可以不依赖任何特定货币实现这个机制呢？答案是可以的，至少我们可以把它和上文提到的“使用任意密码学算法”的方案相结合。方法如下。首先，我们稍微扩展一下上面的具有密码学算法中立性的方案：与其用一个新概念“验证程序”来决定某个交易是否有效，不如只保留一种账户类型 - 合约账户，此时交易可以简单看作是从零地址发出的一条消息。如果交易执行在50000 gas的额度下异常中止，它就是无效的；否则就是有效的并且被接受。在这个模型中，我们的账户遵循以下规则：
+
+1. Check if the transaction is correct. If not, exit. If it is, send some payment for gas to a master contract that will later pay the miner.
+2. Send the actual message.
+3. Send a message to ping the master contract. The master contract then checks how much gas is left, and refunds a fee corresponding to the remaining amount to the sender and sends the rest to the miner.
+
+1. 检查交易是否正确。如果不是，退出。如果是，向一个主合约（master contract）支付一些gas费用，主合约之后会支付矿工。
+2. 发送实际的消息。
+3. 发消息通知主合约。然后主合约会检查还有多少gas剩下，把余额退还给交易发起人，其余的支付给矿工。
+
+Step 1 can be crafted in a standardized form, so that it clearly consumes less than 50000 gas. Step 3 can similarly be constructed. Step 2 can then have the message provide a gas limit equal to the transaction’s specified gas limit minus 100000. Miners can then pattern-match to only accept transactions that are of this standard form (new standard forms can of course be introduced over time), and they can be sure that no single transaction will cheat them out of more than 50000 steps of computational energy. Hence, everything becomes enforced entirely by the gas limit, and miners and transaction senders can use whatever currency they want.
+
+第一步可以有一个标准形式，以便清楚的表明所需的gas不到50000。第三步也可以这样构造。第二步中消息的gas消耗上限可以等于交易指定上限减去100000。然后矿工们就可以只接受与标准形式模式匹配的交易（当然新的标准形式可以随着时间慢慢增加），而且他们也能确定没有任何一笔交易可以消耗超过50000单位的计算量。于是，所有东西都通过gas上限来控制，而矿工和交易发起人可以使用他们喜欢的任何货币。
+
+One challenge that arises is: how do you pay contracts? Currently, contracts have the ability to “charge” for services, using code like this registry example:
+
+一个冒出来的挑战是：如果为合约使用进行支付呢？目前，合约可以为提供的服务“收费”，代码类似下面的域名注册示例：
+
+```
+def reserve(_name:bytes32):
+    if msg.value > 100 * 10**18:
+        if not self.domains[_name].owner:
+            self.domains[_name].owner = msg.sender
+```
+
+如果有多种货币，就没有一个清晰的机制可以把一条消息和它的支付联系起来。不过有两种常用设计模式可以做为替代。第一种是一种“收据”接口：当你支付货币给他人时，你可以要求货币合约保存付款人和支付数额信息。类似于`registrar.reserve("blahblahblah.eth")`的代码则会变成：
+
+```
+gavcoin.sendWithReceipt(registrar, 100 * 10**18)
+registrar.reserve("blahblahblah.eth")
+```
+
+The currency would have code that looks something like this:
+
+这个货币的合约会有类似这样的代码：
+
+```
+def sendWithReceipt(to, value):
+    if self.balances[msg.sender] >= value:
+        self.balances[msg.sender] -= value
+        self.balances[to] += value
+        self.last_sender = msg.sender
+        self.last_recipient = to
+        self.last_value = value
+
+def getLastReceipt():
+    return([self.last_sender, self.last_recipient, self.value]:arr)
+```
+
+And the registrar would work like this:
+
+注册代码则是这样的：
+
+```
+def reserve(_name:bytes32):
+    r = gavcoin.getLastReceipt(outitems=3)
+    if r[0] == msg.sender and r[1] == self and r[2] >= 100 * 10**18:
+        if not self.domains[_name].owner:
+            self.domains[_name].owner = msg.sender
+```
+
+Essentially, the registrar would check the last payment made in that currency contract, and make sure that it is a payment to itself. In order to prevent double-use of a payment, it may make sense to have the get_last_receipt method destroy the receipt in the process of reading it.
+
+基本上注册合约会检查货币合约中的最后一笔支付，确保支付对象是自己。为了防止重复使用同一笔支付，在读收据数据时让`get_last_receipt`方法销毁收据也许是有必要的。
+
+The other pattern is to have a currency have an interface for allowing another address to make withdrawals from your account. The code would then look as follows on the caller side: first, approve a one-time withdrawal of some number of currency units, then reserve, and the reservation contract attempts to make the withdrawal and only goes forward if the withdrawal succeeds:
+
+另一个设计模式是让货币合约提供一个允许其它地址从你的账户取款的接口。从调用者的角度来看代码会是这样：首先，批准一笔一定数额的一次性取款，然后调用`reserve`，然后注册合约尝试取款，如果成功则继续处理：
+
+```
+gavcoin.approveOnce(registrar, 100)
+registrar.reserve("blahblahblah.eth")
+```
+
+And the registrar would be:
+
+注册合约会变成：
+
+```
+def reserve(_name:bytes32):
+    if gavcoin.sendCoinFrom(msg.sender, 100, self) == SUCCESS:
+        if not self.domains[_name].owner:
+            self.domains[_name].owner = msg.sender
+```
+
+The second pattern has been standardized at the Standardized Contract APIs wiki page.
+
+第二种设计模式已经被标准化并记录在[标准合约API文档](https://github.com/ethereum/wiki/wiki/Standardized_Contract_APIs)中。
+
+# Currency-agnostic Proof of Stake
+# 货币无关的权益证明
