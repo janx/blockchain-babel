@@ -155,7 +155,7 @@ It’s well-known and established that an open blockchain requires some kind of 
 
 However, can we create a blockchain that does not rely on any specific currency, instead allowing people to transact using whatever currency they wish? In a proof of work context, particularly a fees-only one, this is actually relatively easy to do for a simple currency blockchain; just have a block size limit and leave it to miners and transaction senders themselves to come to some equilibrium over the transaction price (the transaction fees may well be done as a batch payment via credit card). For Ethereum, however, it is slightly more complicated. The reason is that Ethereum 1.0, as it stands, comes with a built-in gas mechanism which allows miners to safely accept transactions without fear of being hit by denial-of-service attacks; the mechanism works as follows:
 
-问题是，我们是否可以创造一个不依赖任何**特定货币**的区块链，让人们可以用任何他们想用的货币进行交易呢？在工作量证明，尤其是只有交易费奖励的条件下，这对于一个简单货币??? 对于以太坊来说则有些复杂。原因是目前的以太坊1.0版本引入了一个燃料机制(gas)，来帮助矿工可以安全的接受交易而无须担心拒绝服务攻击的风险。这个机制是这样工作的：
+问题是，我们是否可以创造一个不依赖任何**特定货币**的区块链，让人们可以用任何他们想用的货币进行交易呢？在工作量证明，尤其是只有交易费奖励的环境下，这是相对容易实现的。只需要定下一个区块大小限制，然后让矿工和交易发送者自己就交易价格达到某种均衡即可（交易费用或许可以通过信用卡批量支付）。对于以太坊来说则有些复杂。原因是目前的以太坊1.0版本引入了一个燃料机制(gas)，来帮助矿工可以安全的接受交易而无须担心拒绝服务攻击的风险。这个机制是这样工作的：
 
 1. Every transaction specifies a max gas count and a fee to pay per unit gas.
 2. Suppose that the transaction allows itself a gas limit of N. If the transaction is valid, and takes less than N computational steps (say, M computational steps), then it pays M steps worth of the fee. If the transaction consumes all N computational steps before finishing, the execution is reverted but it still pays N steps worth of the fee.
@@ -256,3 +256,55 @@ The second pattern has been standardized at the Standardized Contract APIs wiki 
 
 # Currency-agnostic Proof of Stake
 # 货币无关的权益证明
+
+The above allows us to create a completely currency-agnostic proof-of-work blockchain. However, to what extent can currency-agnosticism be added to proof of stake? Currency-agnostic proof of stake is useful for two reasons. First, it creates a stronger impression of economic neutrality, which makes it more likely to be accepted by existing established groups as it would not be seen as favoring a particular specialized elite (bitcoin holders, ether holders, etc). Second, it increases the amount that will be deposited, as individuals holding digital assets other than ether would have a very low personal cost in putting some of those assets into a deposit contract. At first glance, it seems like a hard problem: unlike proof of work, which is fundamentally based on an external and neutral resource, proof of stake is intrinsically based on some kind of currency. So how far can we go?
+
+上述方案给我们带来了一个完全与特定货币无关的基于工作量证明的区块链。可是在权益证明机制中特定货币无关性能做到何种程度呢？基于两个原因，与特定货币无关的权益证明机制会很有用。首先，它给人的经济中立的感觉更强烈，这会让已经存在的利益团体更容易接受，因为它不在倾向于一群特定的精英人群（比特币持有者，以太币持有者，等等）。第二，它会增加共识保证金的数量，因为持有以太币之外的数字资产的个人能以极低的成本把一部分资产转入保证金合约。粗看起来，这似乎是个很难解决的问题：与工作量证明从根本上以外部和中立的资源为基础不同，权益证明机制本质上基于内部的某种货币。这种条件下我们能走多远呢？
+
+The first step is to try to create a proof of stake system that works using any currency, using some kind of standardized currency interface. The idea is simple: anyone would be able to participate in the system by putting up any currency as a security deposit. Some market mechanism would then be used in order to determine the value of each currency, so as to estimate the amount of each currency that would need to be put up in order to obtain a stake depositing slot. A simple first approximation would be to maintain an on-chain decentralized exchange and read price feeds; however, this ignores liquidity and sockpuppet issues (eg. it’s easy to create a currency and spread it across a small group of accounts and pretend that it has a value of $1 trillion per unit); hence, a more coarse-grained and direct mechanism is required.
+
+第一步是尝试定义某种标准化的货币合约接口，来创造一个支持任意货币的权益证明系统。想法很简单：任何人可以使用任意货币作为保证金来参与系统。然后通过某种市场机制来决定每一种货币的价值有多少，用来估算以某货币作为保证金的话需要多少数量。一个简单的近似方案是维护一个链上的去中心化交易所并且读取其价格数据，然而这种方案忽略了流动性和“马甲”问题（例如，容易创建一个货币并将其分配个一小群人，然后把它的价格造假到一万亿美元）。因此，我们需要一个更粗粒度和直接的机制。
+
+To get an idea of what we are looking for, consider David Friedman’s description of one particular aspect of the ancient Athenian legal system:
+
+为了更好的了解我们所追求的目标，让我们来看看[David Friedman](https://en.wikipedia.org/wiki/David_D._Friedman)对古代雅典人法律体系的[一段描述](http://daviddfriedman.com/Academic/Course_Pages/Legal_Systems_Very_Different_13/Book_Draft/Systems/AthenianChapter.html)：
+
+> The Athenians had a straightforward solution to the problem of producing public goods such as the maintainance of a warship or the organizing of a public festival. If you were one of the richest Athenians, every two years you were obligated to produce a public good; the relevant magistrate would tell you which one.
+> “As you doubtless know, we are sending a team to the Olympics this year. Congratulations, you are the sponsor.”
+> Or
+> “Look at that lovely trireme down at the dock. This year guess who gets to be captain and paymaster.”
+> Such an obligation was called a liturgy. There were two ways to get out of it. One was to show that you were already doing another liturgy this year or had done one last year. The other was to prove that there was another Athenian, richer than you, who had not done one last year and was not doing one this year.
+> This raises an obvious puzzle. How, in a world without accountants, income tax, public records of what people owned and what it was worth, do I prove that you are richer than I am? The answer is not an accountant’s answer but an economist’s—feel free to spend a few minutes trying to figure it out before you turn the page.
+> The solution was simple. I offer to exchange everything I own for everything you own. If you refuse, you have admitted that you are richer than I am, and so you get to do the liturgy that was to be imposed on me.
+
+> 雅典人对于诸如维护战舰或是组织公众节日这样的公众货物(public goods)的制造有一套直接的解决方案。如果你是最富有的雅典人之一，每两年就有义务制造一件公众货物，而相关的治安官会告诉你是哪一件。
+> “正如你知道的，我们今年要派一队人去参加奥林匹克运动会。恭喜你，你是赞助人。”
+> 或者是
+> “看看码头那些可爱的三列桨战船！你猜今年由谁来做船长和军需官？”
+> 这样的义务被称为liturgy, 有两种方式可以摆脱它。一种是证明你今年已经负责了另外一样liturgy或是去年做过了。另一种是证明有另外一个比你还富有的雅典人，去年和今年都没有做任何事情。
+> 显然这里有个问题。在一个没有会计，所得税，公开财产和价值记录的年代，我要如何证明你比我富有？答案来自经济学家而不是会计 - 在你翻页之前可以花几分钟看你能不能想到。
+> 解决方法很简单。我提议用我拥有的一切交换你拥有的一切。如果你拒绝，就等于承认你比我富有，因此你就要去负责本来分配给我的liturgy.
+
+Here, we have a rather nifty scheme for preventing people that are rich from pretending that they are poor. Now, however, what we are looking for is a scheme for preventing people that are poor from pretending that they are rich (or more precisely, preventing people that are releasing small amounts of value into the proof of stake security deposit scheme from pretending that they are staking a much larger amount).
+
+此时我们有了一个非常聪明的方法可以用来防止富人假装自己很穷。但是我们要追求的是一个防止穷人假装自己很富的方法（更准确的说，防止只向权益证明系统缴纳了一小笔保证金的人假装他们缴纳了一大笔钱）。
+
+A simple approach would be a swapping scheme like that, but done in reverse via a voting mechanic: in order to join the stakeholder pool, you would need to be approved by 33% of the existing stakeholders, but every stakeholder that approves you would have to face the condition that you can exchange your stake for theirs: a condition that they would not be willing to meet if they thought it likely that the value of your stake actually would drop. Stakeholders would then charge an insurance fee for signing stake that is likely to strongly drop against the existing currencies that are used in the stake pool.
+
+一个简单方法类似上面的交换做法，只不过通过投票机制反过来进行：为了加入参与人池，必须有超过33%的参与人批准，但每一个批准了的参与人都必须面对一个条件 - 你可以用你的保证金交换他们的。如果他们觉得你的保证金价值会下跌，他们不会愿意接受这样的条件。此时参与人可能会为批准这样一笔相对现有保证金池可能暴跌的保证金收取保险费。
+
+This scheme as described above has two substantial flaws. First, it naturally leads to currency centralization, as if one currency is dominant it will be most convenient and safe to also stake in that currency. If there are two assets, A and B, the process of joining using currency A, in this scheme, implies receiving an option (in the financial sense of the term) to purchase B at the exchange rate of A:B at the price at the time of joining, and this option would thus naturally have a cost (which can be estimated via the Black-Scholes model). Just joining with currency A would be simpler. However, this can be remedied by asking stakeholders to continually vote on the price of all currencies and assets used in the stake pool – an incentivized vote, as the vote reflects both the weight of the asset from the point of view of the system and the exchange rate at which the assets can be forcibly exchanged.
+
+这个方案有两处明显缺陷。第一，它会导致货币中心化的自然产生，因为一旦一种货币成为主流它就会成为最方便和安全的保证金选择。如果有两种资产，A和B，使用A参与共识，在这个方案下，意味着买入了一份以参与时A:B价格为准的B的买入期权（[金融意义](https://en.wikipedia.org/wiki/Option_%28finance%29)上的），而这份期权自然会有成本（可以通过[Black-Scholes模型](http://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model)在估算）。直接使用B参与共识会更简单（译注：这里假定了B是主流货币）。不过，这一点可以通过要求参与人持续的对池中所有货币和资产的价格进行投票来补救 - 带激励的投票，因为投票既反映了从系统角度看资产的权重，也反映了资产可以被强制交易的价格。
+
+A second, more serious flaw, however, is the possibility of pathological metacoins. For example, one can imagine a currency which is backed by gold, but which has the additional rule, imposd by the institution backing it, that forcible transfers initiated by the protocol “do not count”; that is, if such a transfer takes place, the allocation before the transfer is frozen and a new currency is created using that allocation as its starting point. The old currency is no longer backed by gold, and the new one is. Athenian forcible-exchange protocols can get you far when you can actually forcibly exchange property, but when one can deliberately create pathological assets that arbitrarily circumvent specific transaction types it gets quite a bit harder.
+
+然而第二个，也是更严重的缺陷，在于存在病态的“超级”币(译注：metacoin, 但此处meta并不是“元”的意思）的可能性。例如，我们可以想象一种由黄金背书的货币，做背书的机构定了一条额外的规则，说共识协议发起的强制转账“不算数”，也就是说，如果这样的转账发生了，转账前的分配会被冻结，一种新的货币会基于冻结的分配产生。老的货币不再由黄金背书，新的才是。雅典人的强制交换协议只在你实际上能强制交换财产时才可行，在有人故意创造可以专断的绕过特定交易类型的病态资产时就变得很难实现。
+
+Theoretically, the voting mechanism can of course get around this problem: nodes can simply refuse to induct currencies that they know are suspicious, and the default strategy can tend toward conservatism, accepting a very small number of currencies and assets only. Altogether, we leave currency-agnostic proof of stake as an open problem; it remains to be seen exactly how far it can go, and the end result may well be some quasi-subjective combination of TrustDavis and Ripple consensus.
+
+理论上，投票机制应该可以绕过这个问题：节点们只要拒绝接受他们认为可疑的货币就好，而且默认的策略应该倾向于保守主义，只接受一小部分货币和资产。综上所述，我们将与特定货币无关的权益证明机制留做未解决的问题，我们还不知道在这条路上能走多远，结果也可能是TrustDavis和Ripple共识协议的某种“类主观”（quasi-subjective）组合。
+
+# SHA3 and RLP
+# SHA3和RLP
+
