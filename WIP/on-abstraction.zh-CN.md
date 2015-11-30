@@ -11,7 +11,7 @@ One of Ethereum’s goals from the start, and arguably its entire raison d’êt
 以太坊项目最初的目标之一，甚至可说是她存在的全部意义，在于这个平台提供的高度抽象。相对于限制用户使用特定的交易类型和应用，这个平台允许任何人通过编写脚本然后上传到以太坊区块链的方式，来构建任何种类的区块链应用。这给以太坊带来了远超其它区块链协议的未来适应度和中立性：即使区块链最终被认为对于金融不是那么有用，即使区块链只被用于供应链追踪，"自有"汽车，自补充洗碗机或者是免信任的带赌注象棋游戏，以太坊依然有用武之地。然而，以太坊在许多方面还远没有抽象到她应有的程度。
 
 ## Cryptography
-## 密码学
+## 密码学签名
 
 Currently, Ethereum transactions are all signed using the ECDSA algorithm, and specifically Bitcoin’s secp256k1 curve. Elliptic curve signatures are a popular kind of signature today, particularly because of the smaller signature and key sizes compared to RSA: an elliptic curve signature takes only 65 bytes, compared to several hundred bytes for an RSA signature. However, it is becoming increasingly understood that the specific kind of signature used by Bitcoin is far from optimal; ed25519 is increasingly recognized as a superior alternative particularly because of its simpler implementation, greater hardness against side-channel attacks and faster verification. And if quantum computers come around, we will likely have to move to Lamport signatures.
 
@@ -19,7 +19,7 @@ Currently, Ethereum transactions are all signed using the ECDSA algorithm, and s
 
 One suggestion that some of our security auditors, and others, have given us is to allow ed25519 signatures as an option in 1.1. But what if we can stay true to our spirit of abstraction and go a bit further: let people use whatever cryptographic verification algorithm that they want? Is that even possible to do securely? Well, we have the ethereum virtual machine, so we have a way of letting people implement arbitrary cryptographic verification algorithms, but we still need to figure out how it can fit in.
 
-我们的安全审计专家和一些朋友给出过的一个建议是，在1.1版本中加入ed25519签名算法作为可选项。但是我们是否能忠于我们的抽象精神再走远一步：让人们可以选择他们想要的任何密码学验证算法呢？有可能安全的做到吗？没错，我们有以太坊虚拟机，这让人们可以实现任意的密码学验证算法，但我们还需要弄明白**如何**让这些算法融入到系统中。
+我们的安全审计专家和一些朋友给出过的一个建议是，在1.1版本中加入ed25519签名算法作为可选项。但是我们是否能忠于我们的抽象精神再走远一步：让人们可以选择他们想要的任何密码学签名算法呢？有可能安全的做到吗？没错，我们有以太坊虚拟机，这让人们可以实现任意的密码学签名算法，但我们还需要弄明白**如何**让这些算法融入到系统中。
 
 Here is a possible approach:
 
@@ -308,3 +308,10 @@ Theoretically, the voting mechanism can of course get around this problem: nodes
 # SHA3 and RLP
 # SHA3和RLP
 
+Now, we get to the last few parts of the protocol that we have not yet taken apart: the hash algorithm and the serialization algorithm. Here, unfortunately, abstracting things away is much harder, and it is also much harder to tell what the value is. First of all, it is important to note that even though we have shows how we could conceivably abstract away the trees that are used for account storage, it is much harder to see how we could abstract away the trie on the top level that keeps track of the accounts themselves. This tree is necessarily system-wide, and so one can’t simply say that different users will have different versions of it. The top-level trie relies on SHA3, so some kind of specific hashing algorithm there must stay. Even the bottom-level data structures will likely have to stay SHA3, since otherwise there would be a risk of a hash function being used that is not collision-resistant, making the whole thing no longer strongly cryptographically authenticated and perhaps leading to forks between full clients and light clients.
+
+现在我们还没解决的只剩下协议中最后的几个部分了：哈希算法和序列化算法。不幸的是，要把它们抽象掉挺难，而且很难说能得到什么好处。首先，需要注意的是虽然我们展示了把用于账户存储的树结构抽象掉的可能方法，但是很难看出要怎么把顶层的保存账户本身的trie抽象掉。这是一个系统级别的树，因此不能简单的说让不同的用户有它不同的版本。这个顶层的trie依赖于SHA3, 因而这里必须保留某种特定的哈希算法。甚至底层的数据结构也很可能会继续使用SHA3，否则的话会有所选择的哈希函数不能抵御碰撞攻击的风险，让整个系统不再具有强密码学保证，而这也许会导致完整客户端和轻客户端之间的分叉。
+
+RLP is similarly unavoiable; at the very least, each account needs to have code and storage, and the two need to be stored together some how, and that is already a serialization format. Fortunately, however, SHA3 and RLP are perhaps the most well-tested, future-proof and robust parts of the protocol, so the benefit from switching to something else is quite small.
+
+RLP同样很难避免；最起码的，每个账户都需要存储代码和数据，而这两者又需要通过某种方式存在一起，这就需要一种序列化格式。幸运的是，SHA3和RLP也许是协议中测试最充分，最能适应未来变化，最强壮的部分，因此把它们替换掉能得到的好处非常小。
