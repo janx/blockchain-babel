@@ -1,4 +1,5 @@
 # On Abstraction
+# 关于以太坊中的抽象
 
 [Original post](https://blog.ethereum.org/2015/07/05/on-abstraction/) by Vitalik Buterin on July 5th, 2015
 
