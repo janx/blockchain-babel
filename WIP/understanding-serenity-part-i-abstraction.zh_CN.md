@@ -1,10 +1,12 @@
 # Understanding Serenity, Part I: Abstraction
-# 理解Serenity 第一部分: 概述
+# 理解Serenity 第一部分: 深度抽象
 
 [Origin post](https://blog.ethereum.org/2015/12/24/understanding-serenity-part-i-abstraction/) by Vitalik Buterin, on December 24th, 2015
 
 **For a long time we have been public about our plans to continue improving the Ethereum protocol over time and our long development roadmap, learning from our mistakes that we either did not have the opportunity to fix in time for 1.0 or only realized after the fact. However, the Ethereum protocol development cycle has started up once again, with a Homestead release coming very soon, and us quietly starting to develop proof-of-concepts for the largest milestone that we had placed for ourselves in our development roadmap: Serenity.**
 
-我们已经公开继续改进以太坊协议的计划和长期开发路线图相当长一段时间了，这个做法也是来自于从1.0版本发布之前或者事后没有能及时处理的错误中学到的经验。不管怎样，以太坊协议的开发已经重新启动???，Homestead阶段很快就要到来，我们也已经悄悄开始开发一个概念原型(PoC)，目标是开发路线图中最大的里程碑: Serenity.**
+**我们已经公开继续改进以太坊协议的计划和长期开发路线图相当长一段时间了，这个做法也是来自于从1.0版本发布之前或者事后没有能及时处理的错误中学到的经验。不管怎样，以太坊协议的开发已经重新启动???，Homestead阶段很快就要到来，我们也已经悄悄开始开发一个概念原型(PoC)，目标是[开发路线图](https://blog.ethereum.org/2015/03/03/ethereum-launch-process/)中最大的里程碑: Serenity.**
 
+Serenity is intended to have two major feature sets: abstraction, a concept that I initially expanded on in this blog post here, and Casper, our security-deposit-based proof of stake algorithm. Additionally, we are exploring the idea of adding at least the scaffolding that will allow for the smooth deployment over time of our scalability proposals, and at the same time completely resolve parallelizability concerns brought up here – an instant very large gain for private blockchain instances of Ethereum with nodes being run in massively multi-core dedicated servers, and even the public chain may see a 2-5x improvement in scalability. Over the past few months, research on Casper and formalization of scalability and abstraction (eg. with EIP 101) have been progressing at a rapid pace between myself, Vlad Zamfir, Lucius Greg Meredith and a few others, and now I am happy to announce that the first proof of concept release for Serenity, albeit in a very limited form suitable only for testing, is now available.
 
+Serenity会有两大主要特性：深度抽象，一个我最早在[这里](https://blog.ethereum.org/2015/07/05/on-abstraction/)展开讨论过的特性，和Casper，基于保证金的权益证明(PoS)算法。此外，我们也在探索平滑的部署[可伸缩性](https://www.youtube.com/watch?v=-QIt3mKLIYU)(scalability)[改进](https://blog.ethereum.org/2015/04/05/blockchain-scalability-chain-fibers-redux/)的方法，至少是一个脚手架，同时完全解决[这里](http://www.multichain.com/blog/2015/11/smart-contracts-slow-blockchains/)对并行性的担忧 - 运行在私有链环境下，多核CPU专有服务器之上的以太坊节点性能将会有立竿见影的巨大提升，甚至公有链的可伸缩性也能看到2到5倍的提升。在过去的几个月中，Casper的研究和对可伸缩性与抽象改进的形式化工作(eg. [EIP101](https://github.com/ethereum/EIPs/issues/28))都在快速推进，参与者有我, Vlad Zamfir, Lucius Greg Meredith和其他一些人。现在我很高兴的宣布，Serenity阶段的第一个概念原型, 尽管能做的事情还非常有限仅仅可以用于测试，[已经完成](http://github.com/ethereum/pyethereum/blob/serenity/)。
