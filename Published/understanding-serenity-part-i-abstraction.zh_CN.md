@@ -68,7 +68,7 @@ For this article, we will focus on the abstraction features and so serenity_bloc
 
 Currently, there are two types of accounts in Ethereum: externally owned accounts, controlled by a private key, and contracts, controlled by code. For externally owned accounts, we specify a particular digital signature algorithm (secp256k1 ECDSA) and a particular sequence number (aka. nonce) scheme, where every transaction must include a sequence number one higher than the previous, in order to prevent replay attacks. The primary change that we will make in order to increase abstraction is this: rather than having these two distinct types of accounts, we will now have only one – contracts. There is also a special “entry point” account, 0x0000000000000000000000000000000000000000, that anyone can send from by sending a transaction. Hence, instead of the signature+nonce verification logic of accounts being in the protocol, it is now up to the user to put this into a contract that will be securing their own account.
 
-目前以太坊中有两种类型的账户：外部拥有的账户，由私钥控制，和合约账户，由代码控制。对于外部拥有的账户，我们指定了一种特别的数字签名算法(secp256k1椭圆曲线签名)和一个序号体系(nonce)，要求每一个交易都必须包含一个比前一个交易序号大1的序号，目的是防止重放攻击(replay attacks)。我们为提高抽象程度而做的主要改动是：不再有两种不同类型的账户，而是统一为一种 - 合约账户。将会存在一个特殊的“入口”账户，`0x0000000000000000000000000000000000000000`，**任何人**都可以从这个账户发起交易。因此，协议中将不再包含签名+序号的账户验证逻辑，用户必须用合约来保护他们自己的账户。
+目前以太坊中有两种类型的账户：外部拥有的账户，由私钥控制，和合约账户，由代码控制。对于外部拥有的账户，我们指定了一种特别的数字签名算法(secp256k1椭圆曲线签名)和一个序号体系(nonce)，要求每一个交易都必须包含一个比前一个交易序号大1的数字，目的是防止重放攻击(replay attacks)。我们为提高抽象程度而做的主要改动是：不再有两种不同类型的账户，而是统一为一种 - 合约账户。将会存在一个特殊的“入口”账户，`0x0000000000000000000000000000000000000000`，**任何人**都可以从这个账户发起交易。因此，协议中将不再包含签名+nonce的账户验证逻辑，用户必须用合约来保护他们自己的账户。
 
 The simplest kind of contract that is useful is probably the ECDSA verification contract, which simply provides the exact same functionality that is available right now: transactions pass through only if they have valid signatures and sequence numbers, and the sequence number is incremented by 1 if a transaction succeeds. The code for the contract looks as follows:
 
@@ -159,3 +159,55 @@ The reason for the latter mechanic is as follows. One important property that Et
 
 ## Abstraction and Blocks
 ## 区块的抽象
+
+Another clean separation that will be implemented in Serenity is the complete separation of blocks (which are now simply packages of transactions), state (ie. current contract storage, code and account balances) and the consensus layer. Consensus incentivization is done inside a contract, and consensus-level objects (eg. PoW, bets) should be included as transactions sent to a “consensus incentive manager contract” if one wishes to incentivize them.
+
+Serenity中将实现的另一个干净的分离是将区块（仅仅是一堆交易），状态（例如合约的存储区，代码和账户余额）和共识层完全分开。共识激励在合约内部实现，而如果你希望激励的话，共识级别的对象（例如PoW, 赌注）应该被包含在发往“共识激励管理合约”的交易中。
+
+This should make it much easier to take the Serenity codebase and swap out Casper for any consensus algorithm – Tendermint, HoneyBadgerBFT, subjective consensus or even plain old proof of work; we welcome research in this direction and aim for maximum flexibility.
+
+这应该会让你更容易用其它的共识算法 - Tendermint, [HoneyBadgeBFT](https://github.com/amiller/HoneyBadgerBFT), [subjective consensus](http://arxiv.org/abs/1501.06238)甚至是普通的PoW - 替换掉Serenity代码中的Casper。我们非常欢迎这个方向的研究，并且希望能做到最大的灵活。
+
+## Abstraction and Storage
+## 存储的抽象
+
+Currently, the “state” of the Ethereum system is actually quite complex and includes many parts:
+
+目前，以太坊系统的“状态”数据实际上相当复杂，包括这些部分：
+
+* Balance, code, nonce and storage of accounts
+* Gas limit, difficulty, block number, timestamp
+* The last 256 block hashes
+* During block execution, the transaction index, receipt tree and the current gas used
+
+* 余额，代码，nonce，和账户存储区
+* Gas上限，难度，块高度，时间戳
+* 最后256个块的hash值
+* 在执行区块内代码时，需要保存交易索引，收据树(receipt tree, receipt是EVM中的一个概念)和当前消耗的gas。
+
+These data structures exist in various places, including the block state transition function, the state tree, the block header and previous block headers. In Serenity, this will be simplified greatly: although many of these variables will still exist, they will all be moved to specialized contracts in storage; hence, the ONLY concept of “state” that will continue to exist is a tree, which can mathematically be viewed as a mapping {address: {key: value} }. Accounts will simply be trees; account code will be stored at key "" for each account (not mutable by SSTORE), balances will be stored in a specialized “ether contract” and sequence numbers will be left up to each account to determine how to store. Receipts will also be moved to storage; they will be stored in a “log contract” where the contents get overwritten every block.
+
+这些数据结构存在于许多地方，包括块状态转移函数，状态树，区块头和前一个区块头中。在Serenity里面这些将被大幅简化：虽然许多数据仍然会存在，但他们会被转移到特殊的合约中去；因此，**唯一的**”“状态”将以一棵树的形式继续存在，数学上可以看作是形如`{address: {key: value}}`的映射。账户将是一些树，账户合约代码会被存放在主键(key)为`""`的地方（`SSTORE`不可以修改），余额会存在特别的“以太币合约”中，而序号将由每一个帐号自己决定如何保存。收据也将被转移到合约存储区，他们会被保存在一个内容在每个区块都会被覆盖的“日志合约”中。
+
+This allows the State object in implementations to be simplified greatly; all that remains is a two-level map of tries. The scalability upgrade may increase this to three levels of tries (shard ID, address, key) but this is not yet determined, and even then the complexity will be substantially smaller than today.
+
+这样代码实现中的状态对象可以极大的简化。现在只剩下一个两级的trie了。可伸缩性方面的升级可能要求增加为三级trie（分片ID, 地址，主键），这还没有确定，但即使是这样复杂性也远低于现在。
+
+Note that the move of ether into a contract does NOT constitute total ether abstraction; in fact, it is arguably not that large a change from the status quo, as opcodes that deal with ether (the value parameter in CALL, BALANCE, etc) still remain for backward-compatibility purposes. Rather, this is simply a reorganization of how data is stored.
+
+需要注意，把以太币转移进一个合约管理并不是以太币抽象的全部。事实上，一个有争议的看法是相对于现状这并不是一个很大的进步，因为为了向前兼容那些和以太币相关的操作码（带value参数的`CALL`，`BALANCE`等等）依然保留着。某种程度上说，这只是数据存放的一次重组。
+
+## Future Plans
+## 未来的计划
+
+For POC2, the plan is to take abstraction even further. Currently, substantial complexity still remains in the block and transaction-level state transition function (eg. updating receipts, gas limits, the transaction index, block number, stateroots); the goal will be to create an “entry point” object for transactions which handles all of this extra “boilerplate logic” that needs to be done per transaction, as well as a “block begins” and “block ends” entry point. A theoretical ultimate goal is to come up with a protocol where there is only one entry point, and the state transition function consists of simply sending a message from the zero address to the entry point containing the block contents as data. The objective here is to reduce the size of the actual consensus-critical client implementation as much as possible, pushing a maximum possible amount of logic directly into Ethereum code itself; this ensures that Ethereum’s multi-client model can continue even with an aggressive development regime that is willing to accept hard forks and some degree of new complexity in order to achieve our goals of transaction speed and scalability without requiring an extremely large amount of ongoing development effort and security auditing.
+
+在第二个概念原型中，我们计划让抽象更进一步。目前区块和交易级别的状态转移函数依然有相当的复杂性（例如更新收据，gas限制，交易索引，区块高度，状态根节点），我们的目标是为交易创建一个“入口”对象来处理所有这些每一个交易都需要的额外的“样板逻辑”，以及“块开始”和“块结束”的入口。理论上的终极目标，是找到一个只有一个入口点的协议，这样状态转移函数只需要从零地址发送一条包含区块内容数据的消息给入口点即可。这样做的目的是尽可能的减少**客户端实现的共识关键部分（consensus-critical client implementation）**的大小，把尽可能多的逻辑推到以太坊自身上去。这样即使为了达到我们对交易速度和可伸缩性的目标，我们采用了一个接受硬分叉和一定的新复杂度的激进开发制度，也能够个确保以太坊的多重客户端形态可以持续而无需大量额外开发工作和安全审计。
+
+In the longer term, I intend to continue producing proof-of-concepts in python, while the Casper team works together on improving the efficiency and proving the safety and correctness of the protocol; at some point, the protocol will be mature enough to handle a public testnet of some form, possibly (but not certainly) with real value on-chain in order to provide stronger incentives for people to try to “hack” Casper they way that we inevitably expect that they will once the main chain goes live. This is only an initial step, although a very important one as it marks the first time when the research behind proof of stake and abstraction is finally moving from words, math on whiteboards and blog posts into a working implementation written in code.
+
+长期来看，我打算继续在python上开发概念原型，Casper团队则共同改进协议的效率，并证明它的安全性和正确性。在某个时刻，这个协议将成熟到足以处理一个公开的某种形式的测试网络，其上可能会有真实的价值，为人们找出Casper的漏洞提供激励，就像一条真正的链不可避免的遭受的那样。这只是第一步，不过是非常重要的一步，它标志着我们对于权益证明和深度抽象的研究终于从谈话，白板上的数学公式和博客文章变成了能工作的代码。
+
+The next part of this series will discuss the other flagship feature of Serenity, the Casper consensus algorithm.
+
+这个系列的下一篇文章将会讨论Serenity的另一个旗舰特性，Casper共识算法。
