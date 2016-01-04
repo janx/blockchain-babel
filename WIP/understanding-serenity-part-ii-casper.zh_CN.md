@@ -16,9 +16,9 @@ In the last post in this series, we discussed one of the two flagship feature se
 
 The keystone mechanism of Casper is the introduction of a fundamentally new philosophy in the field of public economic consensus: the concept of consensus-by-bet. The core idea of consensus-by-bet is simple: the protocol offers opportunities for validators to bet against the protocol on which blocks are going to be finalized. A bet on some block X in this context is a transaction which, by protocol rules, gives the validator a reward of Y coins (which are simply printed to give to the validator out of thin air, hence “against the protocol”) in all universes in which block X was processed but which gives the validator a penalty of Z coins (which are destroyed) in all universes in which block X was not processed.
 
-Casper向公开经济学共识这个领域引入了一个根本上全新的理念作为自己的基础：投注共识。投注共识的核心思想很简单：为验证人(validator)提供**与协议**对赌哪个块会被finalized的机会。在这里对某个区块X的投注就是一笔交易，在**所有区块X被处理了的世界中**都会带给验证人Y个币的奖励（奖励是凭空“印”出来的，因而是“与协议”对赌），而在所有区块X没有被处理的世界中会对验证人收取Z个币的罚款（罚金被销毁）。
+Casper向公开经济学共识这个领域引入了一个根本上全新的理念作为自己的基础：投注共识。投注共识的核心思想很简单：为验证人(validator)提供**与协议**对赌哪个块会被最终确定的机会。在这里对某个区块X的投注就是一笔交易，在**所有区块X被处理了的世界中**都会带给验证人Y个币的奖励（奖励是凭空“印”出来的，因而是“与协议”对赌），而在所有区块X没有被处理的世界中会对验证人收取Z个币的罚款（罚金被销毁）。
 
-(译注：一个世界(world)在这里应理解为区块链未来的一种可能状态。finalize/finality字典解释为最终确定，定案/终局性等等，在区块链中可理解为这个块所在的链被永久承认为正确的链，这个区块不可能再被revert。这里保持原文不做翻译。)
+(译注：一个世界(world)在这里应理解为区块链未来的一种可能状态。)
 
 The validator will wish to make such a bet only if they believe block X is likely enough to be processed in the universe that people care about that the tradeoff is worth it. And then, here’s the economically recursive fun part: the universe that people care about, ie. the state that users’ clients show when users want to know their account balance, the status of their contracts, etc, is itself derived by looking at which blocks people bet on the most. Hence, each validator’s incentive is to bet in the way that they expect others to bet in the future, driving the process toward convergence.
 
@@ -60,7 +60,7 @@ Thanks to the wonders of calculus, we can actually come up with fairly simple fu
 
 A key advantage of the generalized approach to consensus-by-bet is this. In proof of work, the amount of “economic weight” behind a given block increases only linearly with time: if a block has six confirmations, then reverting it only costs miners (in equilibrium) roughly six times the block reward, and if a block has six hundred confirmations then reverting it costs six hundred times the block reward. In generalized consensus-by-bet, the amount of economic weight that validators throw behind a block could increase exponentially: if most of the other validators are willing to bet at 10:1, you might be comfortable sticking your neck out at 20:1, and once almost everyone bets 20:1 you might go for 40:1 or even higher. Hence, a block may well reach a level of “de-facto complete finality”, where validators’ entire deposits are at stake backing that block, in as little as a few minutes, depending on how brave the validators are (and how much the protocol incentivizes them to be).
 
-投注共识的广义形式有一个重要优点。在工作量证明中，给定区块背后的“经济权重”仅仅随着时间线性增加：如果一个块有6个确认，那么要撤销它只需要花费矿工大约6倍于出块奖励（在均衡态下）的成本，而如果一个块有600个确认，那么撤销它的成本就是出块奖励的600倍。在广义的投注共识中，验证人在一个块上投入的经济权重可以指数级增加：如果其他大多数验证人愿意以10:1下注，你可能会想冒险以20:1下注；而一旦几乎所有人都增加到20:1，你可能会跳到40:1或者更高。因此，一个块很可能在几分钟之内，取决于验证人有多少勇气（以及协议提供的激励大小），就达到一种“准完全finality”的状态，这种状态下验证人的所有保证金都成为了支持这个块的投注。
+投注共识的广义形式有一个重要优点。在工作量证明中，给定区块背后的“经济权重”仅仅随着时间线性增加：如果一个块有6个确认，那么要撤销它只需要花费矿工大约6倍于出块奖励（在均衡态下）的成本，而如果一个块有600个确认，那么撤销它的成本就是出块奖励的600倍。在广义的投注共识中，验证人在一个块上投入的经济权重可以指数级增加：如果其他大多数验证人愿意以10:1下注，你可能会想冒险以20:1下注；而一旦几乎所有人都增加到20:1，你可能会跳到40:1或者更高。因此，一个块很可能在几分钟之内，取决于验证人有多少勇气（以及协议提供的激励大小），就达到一种“准最终确定”的状态，这种状态下验证人的所有保证金都成为了支持这个块的投注。
 
 > 50000-foot view summary: the blockchain is a prediction market on itself.
 > **在50000英尺的高度看：区块链是一个关于自身的预测市场。**
@@ -71,7 +71,7 @@ A key advantage of the generalized approach to consensus-by-bet is this. In proo
 
 Another unique component of the way that Casper does things is that rather than consensus being by-chain as is the case with current proof of work protocols, consensus is by-block: the consensus process comes to a decision on the status of the block at each height independently of every other height. This mechanism does introduce some inefficiencies – particularly, a bet must register the validator’s opinion on the block at every height rather than just the head of the chain – but it proves to be much simpler to implement strategies for consensus-by-bet in this model, and it also has the advantage that it is much more friendly to high blockchain speed: theoretically, one can even have a block time that is faster than network propagation with this model, as blocks can be produced independently of each other, though with the obvious proviso that block finalization will still take a while longer.
 
-Casper的另一个独特之处在于它的共识是**按块达成的(by-block)**而不是像工作量证明那样**按链达成的(by-chain)**：共识过程在某个高度上对区块状态的决策是独立于其它所有高度的。这个机制确实会导致一定程度的低效 - 特别是，一次投注必须表达验证人对于每一个高度上区块的意见，而不能仅是链的头部区块 - 但是在这个模型下为投注共识实现投注策略会十分简单，而且它还有个优点是对高速区块链友好：理论上，这个模型中的出块时间甚至可以比网络传播时间还要块，因为区块可以相互独立的被制造出来，虽然有个明显的附带条件，即区块的**最终确认**依然要一段时间。
+Casper的另一个独特之处在于它的共识是**按块达成的(by-block)**而不是像工作量证明那样**按链达成的(by-chain)**：共识过程在某个高度上对区块状态的决策是独立于其它所有高度的。这个机制确实会导致一定程度的低效 - 特别是，一次投注必须表达验证人对于每一个高度上区块的意见，而不能仅是链的头部区块 - 但是在这个模型下为投注共识实现投注策略会十分简单，而且它还有个优点是对高速区块链友好：理论上，这个模型中的出块时间甚至可以比网络传播时间还要块，因为区块可以相互独立的被制造出来，虽然有个明显的附带条件，即区块的**最终确定**依然要一段时间。
 
 In by-chain consensus, one can view the consensus process as being a kind of tug-of-war between negative infinity and positive infinity at each fork, where the “status” at the fork represents the number of blocks in the longest chain on the right side minus the number of blocks on the left side:
 
@@ -97,15 +97,88 @@ In by-block consensus, there is once again the tug of war, though this time the 
 
 Of course, in proof of work such a design would not work well for one simple reason: if you have to vote on absolutely every previous height, then the amount of voting that needs to be done will increase quadratically with time and fairly quickly grind the system to a halt. With consensus-by-bet, however, because the tug of war can converge to complete finality exponentially, the voting overhead is much more tolerable.
 
-不过，在工作量证明中这样的设计无法很好的工作，原因很简单：如果你需要对**每一个**历史高度进行投票，那么需要进行的投票数量会随着时间的平方增长，很快就能让系统宕机。而在投注共识中，由于拔河游戏可以以指数级速度收敛到完全finality，投票的开销要容易承受的多。
+不过，在工作量证明中这样的设计无法很好的工作，原因很简单：如果你需要对**每一个**历史高度进行投票，那么需要进行的投票数量会随着时间的平方增长，很快就能让系统宕机。而在投注共识中，由于拔河游戏可以以指数级速度收敛到最终确定，投票的开销要容易承受的多。
 
 One counterintuitive consequence of this mechanism is the fact that a block can remain unconfirmed even when blocks after that block are completely finalized. This may seem like a large hit in efficiency, as if there is one block whose status is flip-flopping with ten blocks on top of it then each flip would entail recalculating state transitions for an entire ten blocks, but note that in a by-chain model the exact same thing can happen between chains as well, and the by-block version actually provides users with more information: if their transaction was confirmed and finalized in block 20101, and they know that regardless of the contents of block 20100 that transaction will have a certain result, then the result that they care about is finalized even though parts of the history before the result are not. By-chain consensus algorithms can never provide this property.
 
-这个机制的一个反直觉结果是，一个块可以在其后的块都完全finalize之后依然处于未确认的状态。这看起来像是一个很大的效率问题，因为如果其上有10个块的一个区块状态一直反复变化的话，每一次变动都会导致重新计算这10个块的状态转移，但其实在按链达成的共识中在链与链之间会发生完全相同的事情，而按块的共识实际上可以提供更多的信息给用户：如果他们的交易在第20101个块被确认和finalize，而且他们知道不管第20100个块的内容是什么，这笔交易都有一个确定的结果，那么他们关心的这个结果就是finalized，即使结果前的部分历史还不是。按链达成的共识算法永远也不会有这个性质。
+这个机制的一个反直觉结果是，一个块可以在其后的块都最终确定之后依然处于未确认的状态。这看起来像是一个很大的效率问题，因为如果其上有10个块的一个区块状态一直反复变化的话，每一次变动都会导致重新计算这10个块的状态转移，但其实在按链达成的共识中在链与链之间会发生完全相同的事情，而按块的共识实际上可以提供更多的信息给用户：如果他们的交易在第20101个块被确认和最终确定，而且他们知道不管第20100个块的内容是什么，这笔交易都有一个确定的结果，那么他们关心的这个结果就是已经最终确定的，即使结果前的部分历史还不是。按链达成的共识算法永远也不会有这个性质。
 
 
 ## So how does Casper work anyway?
 ## 那么Casper到底是如何工作的？
 
+In any security-deposit-based proof of stake protocol, there is a current set of bonded validators, which is kept track of as part of the state; in order to make a bet or take one of a number of critical actions in the protocol, you must be in the set so that you can be punished if you misbehave. Joining the set of bonded validators and leaving the set of bonded validators are both special transaction types, and critical actions in the protocol such as bets are also transaction types; bets may be transmitted as independent objects through the network, but they can also be included into blocks.
 
+在所有基于安全准备金的权益证明协议中，都有一群有担保的验证人，这个信息也记录在系统状态中。如果要投注或者进行某一种协议中的关键操作，你必须先加入这个群体，这样才能确保你的恶意行为会被处罚。加入和退出有担保的验证人都是特殊的交易类型，协议的关键操作例如投注同样也是一种交易类型。投注可以作为独立的对象在网络上被传输，也可以被打包进区块之中。
 
+In keeping with Serenity’s spirit of abstraction, all of this is implemented via a Casper contract, which has functions for making bets, joining, withdrawing, and accessing consensus information, and so one can submit bets and take other actions simply by calling the Casper contract with the desired data. The state of the Casper contract looks as follows:
+
+基于Serenity的抽象精神，所有的逻辑都通过一个**Casper合约**来实现，它提供投注，加入，取款和获取共识信息等一系列功能，因此通过简单的调用Casper合约我们就能提交投注或者进行其他操作。Casper合约的内部状态看起来是这个样子：
+
+![Casper State](understanding-serenity-part-ii-casper/casper-state.png)
+
+The contract keeps track of the current set of validators, and for each validator it keeps track of six primary things:
+
+这个合约会记录当前的验证人集合，对于每位验证人记录6项主要数据：
+
+* The return address for the validator’s deposit
+* The current size of the validator’s deposit (note that the bets that the validator makes will increase or decrease this value)
+* The validator’s validation code
+* The sequence number of the most recent bet
+* The hash of the most recent bet
+* The validator’s opinion table
+
+* 验证人保证金的返还地址
+* 当前验证人保证金的数量（注意验证人的投注会使这个值增加或减少）
+* 验证人的**验证代码(validation code)**
+* 最近一次投注的序号
+* 最近一次投注的hash
+* 验证人的**意见**表
+
+The concept of “validation code” is another abstraction feature in Serenity; whereas other proof of stake protocols require validators to use one specific signature verification algorithm, the Casper implementation in Serenity allows validators to specify a piece of code that accepts a hash and a signature and returns 0 or 1, and before accepting a bet checks the hash of the bet against its signature. The default validation code is an ECDSA verifier, but one can also experiment with other verifiers: multisig, threshold signatures (potentially useful for creating decentralized stake pools!), Lamport signatures, etc.
+
+“验证代码”概念是Serenity的另一个抽象特性。其他的权益证明协议会要求验证人使用某一种特定的签名验证算法，而Serenity的Casper实现允许验证人定制一段代码，这段代码可以接受一个hash和一个签名做参数，返回0或者1，在投注被接受之前，代码就可以用签名来验证投注的hash正确无误。默认的验证代码是一个椭圆曲线签名验证算法，你可以试验其它的算法：多重签名，threshold signature（有发展成去中心化资金池的潜力！），Lamport signature（译注：可抵御量子计算机）等等。
+
+Every bet must contain a sequence number one higher than the previous bet, and every bet must contain a hash of the previous bet; hence, one can view the series of bets made by a validator as being a kind of “private blockchain”; viewed in that context, the validator’s opinion is essentially the state of that chain. An opinion is a table that describes:
+
+每一次投注都必须包含一个比上一次投注大1的序号，而且每次投注必须包含上次投注的hash。因此，你可以把某位验证人的一系列投注看作是某种“私有链”；这样理解的话，验证人的意见实际上是这条链的状态。验证人意见是描述如下问题的一张表格：
+
+* What the validator thinks the most likely state root is at any given block height
+* What the validator thinks the most likely block hash is at any given block height (or zero if no block hash is present)
+* How likely the block with that hash is to be finalized
+
+* 在每一个高度，验证人认为哪个是最佳的状态树根节点
+* 在每一个高度，验证人认为哪个是最佳的区块hash（如果还没有区块hash产生可以给0）
+* 该hash对应的区块有多大概率被最终确定
+
+A bet is an object that looks like this:
+
+一次投注是看起来如下的一个对象：
+
+![Casper Bet](understanding-serenity-part-ii-casper/casper-bet.png)
+
+The key information is the following:
+
+这里的关键信息是：
+
+* The sequence number of the bet
+* The hash of the previous bet
+* A signature
+* A list of updates to the opinion
+
+* 投注的序号
+* 上次投注的hash
+* 签名
+* 意见更新组成的列表
+
+The function in the Casper contract that processes a bet has three parts to it. First, it validates the sequence number, previous hash and signature of a bet. Next, it updates the opinion table with any new information supplied by the bet. A bet should generally update a few very recent probabilities, block hashes and state roots, so most of the table will generally be unchanged. Finally, it applies the scoring rule to the opinion: if the opinion says that you believe that a given block has a 99% chance of finalization, and if, in the particular universe that this particular contract is running in, the block was finalized, then you might get 99 points; otherwise you might lose 4900 points.
+
+Casper合约中处理投注的函数有三个部分。首先，它会验证投注的序号，上次投注的hash和投注签名。然后它会用投注中的新信息来更新验证人的意见表。一次投注通常只会有少数概率，区块hash和状态树根节点更新，因此意见表的大部分不会变化。最后，它会对意见表应用评分规则：如果你的意见是相信某个块有99%的机会被最终确定，并且，如果在该特定合约运行的特定世界中，这个块被最终确定了，你将会得到99分，否则你会失去4900分。
+
+Note that, because the process of running this function inside the Casper contract takes place as part of the state transition function, this process is fully aware of what every previous block and state root is at least within the context of its own universe; even if, from the point of view of the outside world, the validators proposing and voting on block 20125 have no idea whether or not block 20123 will be finalized, when the validators come around to processing that block they will be – or, perhaps, they might process both universes and only later decide to stick with one. In order to prevent validators from providing different bets to different universes, we have a simple slashing condition: if you make two bets with the same sequence number, or even if you make a bet that you cannot get the Casper contract to process, you lose your entire deposit.
+
+需要注意的是，由于Casper合约的这个函数是作为状态转移函数的一部分被执行的，**执行过程完全清楚之前的每一个区块和状态树根节点是什么**，至少在它自己所在的世界中是这样。即使从外部世界来看，对第20125个块进行提议和投票的验证人不知道第20123个块是否会被最终确定，但是当验证人**处理到**那个块的时候他们就知道了 - 或者，他们可能两个世界都处理，然后在决定要跟随哪一个。为了防止验证人在不同的世界中提供不同的投注，我们还有一个简单严格的条款：如果你有两次投注序号一样，或者说你提交了一个无法让Casper合约处理的投注，你将失去所有保证金。
+
+Withdrawing from the validator pool takes two steps. First, one must submit a bet whose maximum height is -1; this automatically ends the chain of bets and starts a four-month countdown timer (20 blocks / 100 seconds on the testnet) before the bettor can recover their funds by calling a third method, withdraw. Withdrawing can be done by anyone, and sends funds back to the same address that sent the original join transaction.
+
+从验证人资金池取款需要两个步骤。首先，你需要提交一个最大高度为-1的投注；它会自动完结投注链，并且启动一个为期四个月的倒计时（在testnet上是20个块/100秒），这之后投注人才能通过调用另一个方法，`withdraw`，来收回他的资金。任何人都可以触发取款，资金会被发送回之前发送`join`交易的那个地址。
