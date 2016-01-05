@@ -182,3 +182,86 @@ Note that, because the process of running this function inside the Casper contra
 Withdrawing from the validator pool takes two steps. First, one must submit a bet whose maximum height is -1; this automatically ends the chain of bets and starts a four-month countdown timer (20 blocks / 100 seconds on the testnet) before the bettor can recover their funds by calling a third method, withdraw. Withdrawing can be done by anyone, and sends funds back to the same address that sent the original join transaction.
 
 从验证人资金池取款需要两个步骤。首先，你需要提交一个最大高度为-1的投注；它会自动完结投注链，并且启动一个为期四个月的倒计时（在testnet上是20个块/100秒），这之后投注人才能通过调用另一个方法，`withdraw`，来收回他的资金。任何人都可以触发取款，资金会被发送回之前发送`join`交易的那个地址。
+
+## Block proposition
+## 区块提议
+
+A block contains (i) a number representing the block height, (ii) the proposer address, (iii) a transaction root hash and (iv) a signature. For a block to be valid, the proposer address must be the same as the validator that is scheduled to generate a block for the given height, and the signature must validate when run against the validator’s own validation code. The time to submit a block at height N is determined by T = G + N * 5 where G is the genesis timestamp; hence, a block should ordinarily appear every five seconds.
+
+每个区块都包含 (i) 一个代表区块高度的数字， (ii) 提议人的地址，(iii) 交易树根节点hash和 (iv) 提议人签名。一个有效区块的提议人地址必须是协议安排在这个高度出块的验证人的地址，而签名则必须能通过该验证人的验证代码验证。高度为N的区块的提交时间由公式`T = G + N*5`确定，其中`G`是起源块的时间戳。因此，一般来说每5秒中会出现一个新块。
+
+An NXT-style random number generator is used to determine who can generate a block at each height; essentially, this involves taking missing block proposers as a source of entropy. The reasoning behind this is that even though this entropy is manipulable, manipulation comes at a high cost: one must sacrifice one’s right to create a block and collect transaction fees in order to manipulate it. If it is deemed absolutely necessary, the cost of manipulation can be increased several orders of magnitude further by replacing the NXT-style RNG with a RANDAO-like protocol.
+
+一个NXT风格的随机数发生器被用来决定在每个高度应该由谁来出块，不可避免的，缺失的出块人也会作为熵的一个来源。采取这个方案背后的原因是虽然这个熵是可操纵的，操纵的代价非常高：你必须放弃创建一个块能收取的交易费用收益。如果确实有必要，我们也可以用类似[RANDAO]的协议取代NXT风格的随机数发生器，将这个代价进一步加大数个级别。
+
+## The Validator Strategy
+## 验证人策略
+
+So how does a validator operate under the Casper protocol? Validators have two primary categories of activity: making blocks and making bets. Making blocks is a process that takes place independently from everything else: validators gather transactions, and when it comes time for them to make a block, they produce one, sign it and send it out to the network. The process for making bets is more complicated. The current default validator strategy in Casper is one that is designed to mimic aspects of traditional Byzantine-fault-tolerant consensus: look at how other validators are betting, take the 33rd percentile, and move a step toward 0 or 1 from there.
+
+那么在Casper协议下作为验证人该如何行动呢？验证人有两类主要活动：出块和投注。出块是一个独立于其它所有事件而发生的过程：验证人收集交易，当轮到他们的出块时间时，他们就制造一个区块，签名，然后发送到网络上。投注的过程更为复杂一些。目前Casper默认的验证人策略被设计为模仿传统的拜占庭容错共识：观察其他的验证人如何投注，取33%处的值，向0或者1进一步移动。
+
+To accomplish this, each validator collects and tries to stay as up-to-date as possible on the bets being made by all other validators, and keeps track of the current opinion of each one. If there are no or few opinions on a particular block height from other validators, then it follows an initial algorithm that looks roughly as follows:
+
+为了实现这个策略，每一位验证人都要收集其他验证人的投注，并且尽可能保持该数据处于最新状态，用于跟踪每一位验证人的当前意见。如果某个高度上还没有或者只有很少的其他验证人发表了意见，那么我们用大致如下的算法来处理：
+
+* If the block is not yet present, but the current time is still very close to the time that the block should have been published, bet 0.5
+* If the block is not yet present, but a long time has already passed since the block should have been published, bet 0.3
+* If the block is present, and it arrived on time, bet 0.7
+* If the block is present, but it arrived either far too early or far too late, bet 0.3
+
+* 如果这个高度的块还没有出现，且当前时间离这个块应该出现的时间过去不久，则预计概率为0.5
+* 如果这个高度的块还没有出现，且离这个块应该出现的时间过去了很长时间，则预计概率为0.3
+* 如果这个高度的块已经出现，且按时出现，则预计概率为0.7
+* 如果这个高度的块已经出现，但是出现时间过早或者过晚，则预计概率为0.3
+
+Some randomness is added in order to help prevent “stuck” scenarios, but the basic principle remains the same.
+
+这个过程还会增加一些随机性来防止“卡住”的场景，但是基本原则是一样的。
+
+If there are already many opinions on a particular block height from other validators, then we take the following strategy:
+
+如果对某个高度其他验证人已经发布了许多意见，那么我们使用如下策略：
+
+* Let L be the value such that two thirds of validators are betting higher than L. Let M be the median (ie. the value such that half of validators are betting higher than M). Let H be the value such that two thirds of validators are betting lower than H.
+* Let e(x) be a function that makes x more “extreme”, ie. pushes the value away from 0.5 and toward 1. A simple example is the piecewise function e(x) = 0.5 + x / 2 if x > 0.5 else x / 2.
+* If L > 0.8, bet e(L)
+* If H < 0.2, bet e(H)
+* Otherwise, bet e(M), though limit the result to be within the range [0.15, 0.85] so that less than 67% of validators can’t force another validator to move their bets too far>
+
+* 设三分之二验证人的预计高于概率`L`；`M`为预期的中位数（即有一半验证人的估值高于`M`）；三分之二验证人的预计低于概率`H`。
+* 设`e(x)`是一个让`x`更“极端”的函数，例如让数值远离0.5走向1。一个简单的例子是这个分段函数：`e(x) = 0.5 + x/2 if x > 0.5 else x/2`.
+* 如果 `L > 0.8`, 则预计概率为`e(L)`
+* 如果 `H < 0.2`, 则预计概率为`e(H)`
+* 其他情况，预计概率为`e(M)`, 但是结果不能超出`[0.15, 0.85]`这个区间，因此少于67%的验证人无法强迫其他的验证人大幅调整其预计。
+
+![Casper Validator Strategy](understanding-serenity-part-ii-casper/casper-validator-strategy.png)
+
+Validators are free to choose their own level of risk aversion within the context of this strategy by choosing the shape of e. A function where f(e) = 0.99999 for e > 0.8 could work (and would in fact likely provide the same behavior as Tendermint) but it creates somewhat higher risks and allows hostile validators making up a large portion of the bonded validator set to trick these validators into losing their entire deposit at a low cost (the attack strategy would be to bet 0.9, trick the other validators into betting 0.99999, and then jump back to betting 0.1 and force the system to converge to zero). On the other hand, a function that converges very slowly will incur higher inefficiencies when the system is not under attack, as finality will come more slowly and validators will need to keep betting on each height longer.
+
+在这个策略中，验证人可以自由的通过改变`e`的形状来选择他们自己的风险厌恶程度。选一个在`x > 0.8`时`e(x) = 0.99999`的函数也可以（而且很可能产生和Tendermint一样的行为），但是它有更高的风险，如果占有了担保资金一大部分的验证人是恶意的，他们只需要很低的成本，就能设计让使用该`e`函数的验证人损失全部保证金（攻击策略为先预计概率为0.9，引诱其他验证人预期0.99999，然后突然改为预计0.1，迫使系统预期收敛到0）。另一方面，一个收敛很慢的函数会导致系统在没有遭受攻击的情况下更低效，因为最终确定会更慢，且验证人对每个高度的投注需要持续更久。
+
+Now, how does a client determine what the current state is? Essentially, the process is as follows. It starts off by downloading all blocks and all bets. It then uses the same algorithm as above to construct its own opinion, but it does not publish it. Instead, it simply looks at each height sequentially, processing a block if its probability is greater than 0.5 and skipping it otherwise; the state after processing all of these blocks is shown as the “current state” of the blockchain. The client can also provide a subjective notion of “finality”: when the opinion at every height up to some k is either above 99.999% or below 0.001%, then the client considers the first k blocks finalized.
+
+现在，作为`客户端`要如何确定当前状态呢？过程基本如下：一开始先下载所有的区块和投注，然后用上面的算法来形成自己的意见，但是不公布意见。它只要简单的按顺序在每个高度进行观察，如果一个块的概率高于0.5就处理它，否则就跳过它。在处理所有的区块之后得到的状态就可以显示为区块链的“当前状态”。客户端还可以给出对于“最终确定”的主观看法：当高度`k`之前的每个块，意见要么高于99.999%或者低于0.001%，那么客户端就可以认为前`k`个块已经最终确定。
+
+## Further Research
+## 进一步的研究
+
+There is still quite a bit of research to do for Casper and generalized consensus-by-bet. Particular points include:
+
+Casper和一般化的投注共识还需要大量研究。特别包括以下几个方面：
+
+* Coming up with results to show that the system economically incentivizes convergence, even in the presence of some quantity of Byzantine validators
+* Determining optimal validator strategies
+* Making sure that the mechanism for including the bets in blocks is not exploitable
+* Increasing efficiency. Currently, the POC1 simulation can handle ~16 validators running at the same time (up from ~13 a week ago), though ideally we should push this up as much as possible (note that the number of validators the system can handle on a live network should be roughly the square of the performance of the POC, as the POC runs all nodes on the same machine).
+
+* 给出能表明这个系统在经济上会激励收敛的成果，即使有一些拜占庭验证人的存在。
+* 找出最佳的验证人策略
+* 确保把**投注打包进区块**的机制没有漏洞
+* 提高效率。目前的概念原型(POC1)能模拟大约16个验证人同时运行，理想情况下这个数字应该越高越好（注意系统在**生产网络**能处理的验证人数量大约是概念原型性能的平方，因为概念原型把所有节点都运行在一台机器上）。
+
+The next article in this series will deal with efforts to add a scaffolding for scalability into Serenity, and will likely be released around the same time as POC2.
+
+该系列的下一篇文章会介绍Serenity可伸缩性方面的工作，估计会和Serenity的第二个概念原型(POC2)同时发布。
