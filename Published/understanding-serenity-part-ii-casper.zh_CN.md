@@ -5,7 +5,7 @@
 
 **Special thanks to Vlad Zamfir for introducing the idea of by-block consensus and convincing me of its merits, alongside many of the other core ideas of Casper, and to Vlad Zamfir and Greg Meredith for their continued work on the protocol.**
 
-**特别感谢Vlad Zamfir，他提出了by-block???共识这个想法，并且说服我认同它的价值和Casper的许多核心想法；以及Vlad Zamfir和Greg Meredith，为他们在这个协议上的持续努力。**
+**特别感谢Vlad Zamfir，他提出了按块达成共识这个想法，并且说服我认同它和Casper的其它一些核心想法的价值；以及Vlad Zamfir和Greg Meredith，为他们在这个协议上的持续努力。**
 
 In the last post in this series, we discussed one of the two flagship feature sets of Serenity: a heightened degree of abstraction that greatly increases the flexibility of the platform and takes a large step in moving Ethereum from “Bitcoin plus Turing-complete” to “general-purpose decentralized computation”. Now, let us turn our attention to the other flagship feature, and the one for which the Serenity milestone was originally created: the Casper proof of stake algorithm.
 
