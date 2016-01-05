@@ -192,7 +192,7 @@ A block contains (i) a number representing the block height, (ii) the proposer a
 
 An NXT-style random number generator is used to determine who can generate a block at each height; essentially, this involves taking missing block proposers as a source of entropy. The reasoning behind this is that even though this entropy is manipulable, manipulation comes at a high cost: one must sacrifice one’s right to create a block and collect transaction fees in order to manipulate it. If it is deemed absolutely necessary, the cost of manipulation can be increased several orders of magnitude further by replacing the NXT-style RNG with a RANDAO-like protocol.
 
-一个NXT风格的随机数发生器被用来决定在每个高度应该由谁来出块，不可避免的，缺失的出块人也会作为熵的一个来源。采取这个方案背后的原因是虽然这个熵是可操纵的，操纵的代价非常高：你必须放弃创建一个块能收取的交易费用收益。如果确实有必要，我们也可以用类似[RANDAO]的协议取代NXT风格的随机数发生器，将这个代价进一步加大数个级别。
+一个NXT风格的随机数发生器被用来决定在每个高度应该由谁来出块，不可避免的，缺失的出块人也会作为熵的一个来源。采取这个方案背后的原因是虽然这个熵是可操纵的，操纵的代价非常高：你必须放弃创建一个块能收取的交易费用收益。如果确实有必要，我们也可以用类似[RANDAO](http://github.com/randao/randao)的协议取代NXT风格的随机数发生器，将这个代价进一步加大数个级别。
 
 ## The Validator Strategy
 ## 验证人策略
@@ -257,7 +257,7 @@ Casper和一般化的投注共识还需要大量研究。特别包括以下几�
 * Making sure that the mechanism for including the bets in blocks is not exploitable
 * Increasing efficiency. Currently, the POC1 simulation can handle ~16 validators running at the same time (up from ~13 a week ago), though ideally we should push this up as much as possible (note that the number of validators the system can handle on a live network should be roughly the square of the performance of the POC, as the POC runs all nodes on the same machine).
 
-* 给出能表明这个系统在经济上会激励收敛的成果，即使有一些拜占庭验证人的存在。
+* 给出能表明即使存在一些拜占庭验证人系统也能在经济上激励收敛的证据。
 * 找出最佳的验证人策略
 * 确保把**投注打包进区块**的机制没有漏洞
 * 提高效率。目前的概念原型(POC1)能模拟大约16个验证人同时运行，理想情况下这个数字应该越高越好（注意系统在**生产网络**能处理的验证人数量大约是概念原型性能的平方，因为概念原型把所有节点都运行在一台机器上）。
