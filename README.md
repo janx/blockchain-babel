@@ -1,1 +1,1 @@
-# EthFans.org 中文翻译项目
+# Blockchain Babel
