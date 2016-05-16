@@ -63,3 +63,35 @@ Hence, one can make a reasonably strong case that if one is actually interested 
 
 ## Finality in Proof of Work
 ## 工作量证明中的确定性
+
+Technically, a proof of work blockchain never allows a transaction to truly be “finalized”; for any given block, there is always the possibility that someone will create a longer chain that starts from a block before that block and does not include that block. Practically speaking, however, financial intermediaries on top of public blockchains have evolved a very practical means of determining when a transaction is sufficiently close to being final for them to make decisions based on it: waiting for six confirmations.
+
+从技术的观点看，工作量证明区块链上的交易永远也不会最终确定，对于任何一个区块，随时都存在着冒出一条更长的始于它的父块又不包含它的分叉的可能。然而在现实中，公有链上的金融服务已经演化出了一种非常实用的方法来判断一个交易是否足够近似确定：等6个确认。
+
+The probabilistic logic here is simple: if an attacker has less than 25% of network hashpower, then we can model an attempted double spend as a random walk that starts at -6 (meaning “the attacker’s double-spend chain is six blocks shorter than the original chain”), and at each step has a 25% chance of adding 1 (ie. the attacker makes a block and inches a step closer) and an 75% chance of subtracting 1 (ie. the original chain makes a block). We can determine the probability that this process will ever reach zero (ie. the attacker’s chain overtaking the original) mathematically, via the formula (0.25 / 0.75)^6 ~= 0.00137 – smaller than the transaction fee that nearly all exchanges charge. If you want even greater certainty, you can wait 13 confirmations for a one-in-a-million chance of the attacker succeeding, and 162 confirmations for a chance so small that the attacker is literally more likely to guess your private key in a single attempt. Hence, some notion of de-facto finality even on proof-of-work blockchains does in fact exist.
+
+这里的概率计算很简单：如果攻击者拥有的算力不到25%，我们便可以用随机漫步来描述双花攻击，随机漫步从-6开始（意味着攻击者的链比原来的链短了6个区块）。通过公式`(0.25 / 0.75)^6 ~= 0.00137`，我们可以计算出这个随机过程达到0的概率（即攻击者的链超过原来的链的概率），小于几乎所有交易所的手续费率（译注：攻击成本）。如果你想要更高的确定性，可以等待13个确认让攻击者只有百万分之一的成功机会，或者等待162个确认使得攻击者的机会比直接猜出你的私钥还低。因此，即使在基于工作量证明的区块链上**也存在**一定程度的确定性。
+
+However, this probabilistic logic assumes that 75% of nodes behave honestly (at lower percentages like 60% a similar argument can be made but more confirmations are required). There is now also an economic debate to be had: is that assumption likely to be true? There are arguments that miners can be bribed, eg. through a P + epsilon attack, to all follow an attacking chain (a practical way of executing such a bribe may be to run a negative-fee mining pool, possibly advertising a zero fee and quietly providing even higher revenues to avoid arousing suspicion). Attackers may also try to hack into or disrupt the infrastructure of mining pools, an attack which can potentially be done very cheaply as the incentive for security in proof of work is limited (if a miner gets hacked, they lose only their rewards for a few hours; their principal is safe). And, last but not least, there is what Swanson has elsewhere called the “Maginot Line” attack: throw a very large amount of money at the problem and simply bring more miners in than the rest of the network combined.
+
+问题是，我们的计算假设了75%的节点是靠谱的（对于更低的比例，例如60%，会有近似的结论但是需要更多的确认数）。这个前提能在我们的激励模型中成立吗？攻击者可以贿赂矿工都选择攻击者的链（一个比较实际的贿赂方式是运行一个负费率的矿池，或者名义上零费率另外补贴收益率来避免招人怀疑），[P + epsilon attack](https://blog.ethereum.org/2015/01/28/p-epsilon-attack/)就是一个思路。攻击者还可以尝试黑进矿池或者破坏矿池基础设施，这在对工作量证明的安全保护缺少激励的环境下实施成功的概率不小（如果矿工被黑，他们只会损失一段时间内的奖励，本金是安全的）。最后还有Swanson说的所谓的“马其诺防线”攻击：投入巨量的金钱制造出比全网更高的算力进行简单碾压。
+
+## Finality in Casper
+## Casper中的确定性
+
+The Casper protocol is intended to offer stronger finality guarantees than proof of work. First, there is a standard definition of “total economic finality”: it takes place when 2/3 of all validators make maximum-odds bets that a given block or state will be finalized. This condition offers very strong incentives for validators to never try to collude to revert the block: once validators make such maximum-odds bets, in any blockchain where that block or state is not present, the validators lose their entire deposits. As Vlad Zamfir put it, imagine a version of proof of work where if you participate in a 51% attack your mining hardware burns down.
+
+Casper尝试提供比工作量证明更高的确定性保证。首先Casper对“经济上完全确定”（total economic finality）有标准定义：当大于等于2/3的验证人以最大概率投注一个区块或者说状态会最终确定的时候。在这个定义下验证人有非常强的激励不去合谋推翻这个区块：一旦验证人作出了最大概率的投注，在任何一个不包含这个区块的分叉中验证人都会失去他们全部的保证金。正如Vlad Zamfir指出的，你可以把Casper想象成一个参与51%的攻击会导致你的矿机被烧毁的工作量证明变种。
+
+Second, the fact that validators are pre-registered means that there is no possibility that somewhere else out there there are some other validators making the equivalent of a longer chain. If you see 2/3 of validators placing their entire stakes behind a claim, then if you see somewhere else 2/3 of validators placing their entire stakes behind a contradictory claim, that necessarily implies that the intersection (ie. at least 1/3 of validators) will now lose their entire deposits no matter what happens. This is what we mean by “economic finality”: we can’t guarantee that “X will never be reverted”, but we can guarantee the slightly weaker claim that “either X will never be reverted or a large group of validators will voluntarily destroy millions of dollars of their own capital”.
+
+其次，由于成为验证人需要事先申请，这意味着不可能存在另外的验证人在悄悄的制造另一条更长的链。如果你看到2/3的验证人将他们的全部本钱压倒了某个块上，然后又发现有2/3的验证人对另一个矛盾的块做了相同的事，那么这只能说明这两组验证人的交集（即至少1/3的验证人）将失去他们的全部保证金。这便是所谓的“经济上的确定性”：我们无法保证“X永远不会被撤销”，但我们可以保证的是一个稍弱的说法，“X要么永远不被撤销，要么有一大群验证人自愿的销毁他们自己价值数百万美元的本金”。
+
+Finally, even if a double-finality event does take place, users are not forced to accept the claim that has more stake behind it; instead, users will be able to manually choose which fork to follow along, and are certainly able to simply choose “the one that came first”. A successful attack in Casper looks more like a hard-fork than a reversion, and the user community around an on-chain asset is quite free to simply apply common sense to determine which fork was not an attack and actually represents the result of the transactions that were originally agreed upon as finalized.
+
+最后，即使双重确定（double-finality）的事件真的发生了，用户也无需被迫接受有更多投注支持的分叉。相反，用户可以自行决定追随哪个分叉，一个完全可行的简单策略是接受“先来的那个”。Casper中的一次成功攻击更像是一次硬分叉而不是回退，而持有链上资产的用户社区可以自由的基于常识选择那条不是攻击者制造的，而是包含真正应该被确定的交易的分叉。
+
+## Law and Economics
+## 法律与经济
+
+
