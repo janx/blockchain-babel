@@ -8,7 +8,7 @@
 
 Recently one of the major disputes in ongoing debate between public blockchain and permissioned blockchain proponents is the issue of settlement finality. One of the simple properties that a centralized system at least appears to have is a notion of “finality”: once an operation is completed, that operation is completed for good, and there is no way that the system can ever “go back” and revert that operation. Decentralized systems, depending on the specific nature of their design, may provide that property, or they may provide it probabilistically, within certain economic bounds, or not at all, and of course public and permissioned blockchains perform very differently in this regard.
 
-结算的确定性问题是最近公有链与许可链之间的一个主要战场。看起来中心化的系统至少有一个优点，即所谓的“确定性”（"finality"）：操作一旦完成，就永远完成了，系统永不可能再回退回去撤销这个操作。而去中心化的系统，根据设计的不同，可能有这个性质，也可能只提供在一定激励范围内的概率性确定，甚至没有确定性???，在这一点上公有链和许可链是有很大区别的。
+结算的确定性问题是最近公有链与许可链之间的一个主要战场。看起来中心化的系统至少有一个优点，即所谓的“确定性”（"finality"）：操作一旦完成，就永远完成了，系统永不可能再回退回去撤销这个操作。而去中心化的系统，根据设计的不同，可能有这个性质，也可能只提供在一定激励范围内的概率性确定，甚至没有确定性，在这一点上公有链和许可链是有很大区别的。
 
 This concept of finality is particularly important in the financial industry, where institutions need to maximally quickly have certainty over whether or not the certain assets are, in a legal sense, “theirs”, and if their assets are deemed to be theirs, then it should not be possible for a random blockchain glitch to suddenly decide that the operation that made those assets theirs is now reverted and so their ownership claim over those assets is lost.
 
